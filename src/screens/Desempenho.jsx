@@ -3,6 +3,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageTitle } from '../components/ui/PageTitle';
 import { SectionLabel } from '../components/ui/SectionLabel';
+import { paymentService } from '../services/api';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -39,6 +40,9 @@ function BigStat({ icon, value, suffix, label, tone = "grass" }) {
 }
 
 export function Desempenho({ user, ranking, setView }) {
+  const [pixData, setPixData] = useState(null);
+  const [loadingPix, setLoadingPix] = useState(false);
+
   const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
   const pts = user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 };
   const total = pts.total;
@@ -47,20 +51,68 @@ export function Desempenho({ user, ranking, setView }) {
   const leaderTotal = ranking.length > 0 ? ranking[0].total : 0;
   const distance = pos === 1 ? "Você lidera! 🏆" : `${leaderTotal - total} pts`;
 
+  const handlePay = async () => {
+    setLoadingPix(true);
+    try {
+      const data = await paymentService.generatePix();
+      setPixData(data);
+    } catch (err) {
+      console.error("Failed to generate PIX:", err);
+    } finally {
+      setLoadingPix(false);
+    }
+  };
+
+  const copyPix = () => {
+    if (!pixData) return;
+    navigator.clipboard.writeText(pixData.qrCodeCopyPaste);
+  };
+
   return (
     <div>
       <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`}>Meu Desempenho</PageTitle>
 
       {!user.isPaid && (
-        <Card className="mb-6 -mt-2 border-gold/40 bg-gold-dim/30 flex flex-wrap items-center gap-4 justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-gold-400"><Icon name="alert" size={22} /></span>
-            <div>
-              <div className="font-cond font-bold text-gold-400">Pagamento pendente</div>
-              <div className="text-mute text-sm">Confirme sua inscrição para validar os pontos no ranking oficial.</div>
+        <Card className="mb-6 -mt-2 border-gold/40 bg-gold-dim/30">
+          <div className="flex flex-wrap items-center gap-4 justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-gold-400"><Icon name="alert" size={22} /></span>
+              <div>
+                <div className="font-cond font-bold text-gold-400">Pagamento pendente</div>
+                <div className="text-mute text-sm">Confirme sua inscrição para validar os pontos no ranking oficial.</div>
+              </div>
             </div>
+            {!pixData && (
+              <Button variant="gold" size="sm" icon="wallet" onClick={handlePay} disabled={loadingPix}>
+                {loadingPix ? "Gerando..." : "Pagar inscrição · R$ 30"}
+              </Button>
+            )}
           </div>
-          <Button variant="gold" size="sm" icon="wallet">Pagar inscrição · R$ 30</Button>
+
+          {pixData && (
+            <div className="mt-6 pt-6 border-t border-gold/20 flex flex-col md:flex-row items-center gap-8 fade-in">
+              <div className="bg-white p-3 rounded-2xl shadow-lg shrink-0">
+                <img src={`data:image/jpeg;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" className="w-40 h-40" />
+              </div>
+              <div className="flex-1 min-w-0 text-center md:text-left">
+                <h3 className="font-display text-xl text-cream mb-2">Escaneie o QR Code</h3>
+                <p className="text-mute text-sm mb-4">
+                  Ou copie e cole o código abaixo no aplicativo do seu banco para completar o pagamento de <strong>R$ 30,00</strong>.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 bg-bg/60 border border-edge rounded-xl px-4 py-3 font-mono text-[11px] text-mute truncate">
+                    {pixData.qrCodeCopyPaste}
+                  </div>
+                  <Button variant="secondary" icon="copy" onClick={copyPix}>
+                    Copiar Código
+                  </Button>
+                </div>
+                <p className="mt-4 text-xs text-mute2 italic">
+                  * Após o pagamento, o status será atualizado automaticamente em alguns instantes.
+                </p>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

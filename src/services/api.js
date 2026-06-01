@@ -83,4 +83,11 @@ export const adminService = {
   }
 };
 
+export const paymentService = {
+  generatePix: async () => {
+    const response = await api.post('/payment/pix');
+    return response.data;
+  }
+};
+
 export default api;
