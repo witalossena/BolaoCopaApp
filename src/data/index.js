@@ -145,6 +145,11 @@ export const TOTAL_MATCHES = MATCHES.length;
 export const LOCKED_MATCHES = MATCHES.filter(m => m.status === "locked").length;
 
 export const SCORING = {
+  matches: [
+    { label: "Placar exato", pts: 15 },
+    { label: "Resultado e saldo de gols", pts: 10 },
+    { label: "Apenas resultado (vencedor ou empate)", pts: 5 },
+  ],
   groups: [
     { label: "Seleção classificada na posição certa (1º ou 2º)", pts: 10 },
     { label: "Seleção classificada, mas em outra posição", pts: 5 },
