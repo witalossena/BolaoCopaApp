@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { background: #0a130d; }
+body { font-family: 'Barlow', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+.bg-pitch {
+  background:
+    radial-gradient(1100px 600px at 50% -10%, rgba(52,199,94,0.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 10%, rgba(227,178,60,0.06), transparent 55%),
+    #0a130d;
+}
+
+.title-3d {
+  font-family: 'Bevan', serif;
+  color: #f4efe2;
+  letter-spacing: .01em;
+  text-shadow: 2px 2px 0 #27a64d, 4px 4px 0 rgba(0,0,0,.35);
+}
+.title-3d.gold  { color: #f0c861; text-shadow: 2px 2px 0 #6b4f12, 4px 4px 0 rgba(0,0,0,.35); }
+.title-3d.green { color: #5fd97f; text-shadow: 2px 2px 0 #0e3a1e, 4px 4px 0 rgba(0,0,0,.35); }
+
+.logo-3d { font-family: 'Bevan', serif; color: #f4efe2; text-shadow: 1.5px 1.5px 0 rgba(0,0,0,.4); }
+
+::selection { background: rgba(52,199,94,.3); }
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #1f3a29; border-radius: 10px; border: 2px solid #0a130d; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+select option { background: #0f1d14; color: #f4efe2; }
+
+.fade-in { animation: fadeIn .35s ease forwards; }
+@keyframes fadeIn { from { opacity: .35; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.pop { animation: pop .25s cubic-bezier(.2,.9,.3,1.2) forwards; }
+@keyframes pop { from { transform: scale(.94); opacity: .4; } to { transform: scale(1); opacity: 1; } }
