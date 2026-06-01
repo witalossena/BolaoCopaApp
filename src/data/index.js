@@ -19,113 +19,117 @@ export const TEAM_TINT = {
   MEX:"#3f9e57", USA:"#5a7fd6", CRO:"#d96d6d", MAR:"#c75a5a", JPN:"#5a8fd6",
 };
 
-const RAW_MATCHES = `11/06/2026,A,México,África do Sul
-11/06/2026,A,Coreia do Sul,República Tcheca
-18/06/2026,A,República Tcheca,África do Sul
-18/06/2026,A,México,Coreia do Sul
-24/06/2026,A,República Tcheca,México
-24/06/2026,A,África do Sul,Coreia do Sul
-12/06/2026,B,Canadá,Bósnia e Herzegovina
-13/06/2026,B,Catar,Suíça
-18/06/2026,B,Suíça,Bósnia e Herzegovina
-19/06/2026,B,Canadá,Catar
-24/06/2026,B,Suíça,Canadá
-24/06/2026,B,Bósnia e Herzegovina,Catar
-13/06/2026,C,Brasil,Marrocos
-14/06/2026,C,Haiti,Escócia
-19/06/2026,C,Escócia,Marrocos
-19/06/2026,C,Brasil,Haiti
-24/06/2026,C,Escócia,Brasil
-24/06/2026,C,Marrocos,Haiti
-12/06/2026,D,Estados Unidos,Paraguai
-14/06/2026,D,Austrália,Turquia
-19/06/2026,D,Turquia,Paraguai
-20/06/2026,D,Estados Unidos,Austrália
-25/06/2026,D,Turquia,Estados Unidos
-25/06/2026,D,Paraguai,Austrália
-14/06/2026,E,Alemanha,Curaçau
-15/06/2026,E,Costa do Marfim,Equador
-20/06/2026,E,Equador,Curaçau
-20/06/2026,E,Alemanha,Costa do Marfim
-25/06/2026,E,Equador,Alemanha
-25/06/2026,E,Curaçau,Costa do Marfim
-14/06/2026,F,Holanda,Japão
-15/06/2026,F,Suécia,Tunísia
-20/06/2026,F,Tunísia,Japão
-21/06/2026,F,Holanda,Suécia
-25/06/2026,F,Tunísia,Holanda
-25/06/2026,F,Japão,Suécia
-15/06/2026,G,Bélgica,Egito
-16/06/2026,G,Irã,Nova Zelândia
-21/06/2026,G,Nova Zelândia,Egito
+const RAW_MATCHES = `11/06/2026 19:00,A,México,África do Sul
+11/06/2026 19:00,A,Coreia do Sul,República Tcheca
+18/06/2026 19:00,A,República Tcheca,África do Sul
+18/06/2026 19:00,A,México,Coreia do Sul
+24/06/2026 19:00,A,República Tcheca,México
+24/06/2026 19:00,A,África do Sul,Coreia do Sul
+12/06/2026 19:00,B,Canadá,Bósnia e Herzegovina
+13/06/2026 19:00,B,Catar,Suíça
+18/06/2026 19:00,B,Suíça,Bósnia e Herzegovina
+19/06/2026 19:00,B,Canadá,Catar
+24/06/2026 19:00,B,Suíça,Canadá
+24/06/2026 19:00,B,Bósnia e Herzegovina,Catar
+13/06/2026 19:00,C,Brasil,Marrocos
+14/06/2026 19:00,C,Haiti,Escócia
+19/06/2026 19:00,C,Escócia,Marrocos
+19/06/2026 19:00,C,Brasil,Haiti
+24/06/2026 19:00,C,Escócia,Brasil
+24/06/2026 19:00,C,Marrocos,Haiti
+12/06/2026 19:00,D,Estados Unidos,Paraguai
+14/06/2026 19:00,D,Austrália,Turquia
+19/06/2026 19:00,D,Turquia,Paraguai
+20/06/2026 19:00,D,Estados Unidos,Austrália
+25/06/2026 19:00,D,Turquia,Estados Unidos
+25/06/2026 19:00,D,Paraguai,Austrália
+14/06/2026 19:00,E,Alemanha,Curaçau
+15/06/2026 19:00,E,Costa do Marfim,Equador
+20/06/2026 19:00,E,Equador,Curaçau
+20/06/2026 19:00,E,Alemanha,Costa do Marfim
+25/06/2026 19:00,E,Equador,Alemanha
+25/06/2026 19:00,E,Curaçau,Costa do Marfim
+14/06/2026 19:00,F,Holanda,Japão
+15/06/2026 19:00,F,Suécia,Tunísia
+20/06/2026 19:00,F,Tunísia,Japão
+21/06/2026 19:00,F,Holanda,Suécia
+25/06/2026 19:00,F,Tunísia,Holanda
+25/06/2026 19:00,F,Japão,Suécia
+15/06/2026 19:00,G,Bélgica,Egito
+16/06/2026 19:00,G,Irã,Nova Zelândia
+21/06/2026 19:00,G,Nova Zelândia,Egito
 21/06/2026,G,Bélgica,Irã
-26/06/2026,G,Nova Zelândia,Bélgica
+26/06/2026 19:00,G,Nova Zelândia,Bélgica
 26/06/2026,G,Egito,Irã
-15/06/2026,H,Espanha,Cabo Verde
+15/06/2026 19:00,H,Espanha,Cabo Verde
 16/06/2026,H,Arábia Saudita,Uruguai
-21/06/2026,H,Uruguai,Cabo Verde
-21/06/2026,H,Espanha,Arábia Saudita
-26/06/2026,H,Uruguai,Espanha
-26/06/2026,H,Cabo Verde,Arábia Saudita
-16/06/2026,I,França,Senegal
-16/06/2026,I,Iraque,Noruega
-22/06/2026,I,Noruega,Senegal
-22/06/2026,I,França,Iraque
-26/06/2026,I,Noruega,França
-26/06/2026,I,Senegal,Iraque
-16/06/2026,J,Argentina,Argélia
-17/06/2026,J,Áustria,Jordânia
-22/06/2026,J,Jordânia,Argélia
-22/06/2026,J,Argentina,Áustria
-27/06/2026,J,Jordânia,Argentina
+21/06/2026 19:00,H,Uruguai,Cabo Verde
+21/06/2026 19:00,H,Espanha,Arábia Saudita
+26/06/2026 19:00,H,Uruguai,Espanha
+26/06/2026 19:00,H,Cabo Verde,Arábia Saudita
+16/06/2026 19:00,I,França,Senegal
+16/06/2026 19:00,I,Iraque,Noruega
+22/06/2026 19:00,I,Noruega,Senegal
+22/06/2026 19:00,I,França,Iraque
+26/06/2026 19:00,I,Noruega,França
+26/06/2026 19:00,I,Senegal,Iraque
+16/06/2026 19:00,J,Argentina,Argélia
+17/06/2026 19:00,J,Áustria,Jordânia
+22/06/2026 19:00,J,Jordânia,Argélia
+22/06/2026 19:00,J,Argentina,Áustria
+27/06/2026 19:00,J,Jordânia,Argentina
 27/06/2026,J,Argélia,Áustria
-17/06/2026,K,Portugal,RD Congo
-17/06/2026,K,Uzbequistão,Colômbia
-23/06/2026,K,Colômbia,RD Congo
-23/06/2026,K,Portugal,Uzbequistão
-27/06/2026,K,Colômbia,Portugal
-27/06/2026,K,RD Congo,Uzbequistão
-17/06/2026,L,Inglaterra,Croácia
-18/06/2026,L,Gana,Panamá
-23/06/2026,L,Panamá,Croácia
-23/06/2026,L,Inglaterra,Gana
-27/06/2026,L,Panamá,Inglaterra
-27/06/2026,L,Croácia,Gana`;
+17/06/2026 19:00,K,Portugal,RD Congo
+17/06/2026 19:00,K,Uzbequistão,Colômbia
+23/06/2026 19:00,K,Colômbia,RD Congo
+23/06/2026 19:00,K,Portugal,Uzbequistão
+27/06/2026 19:00,K,Colômbia,Portugal
+27/06/2026 19:00,K,RD Congo,Uzbequistão
+17/06/2026 19:00,L,Inglaterra,Croácia
+18/06/2026 19:00,L,Gana,Panamá
+23/06/2026 19:00,L,Panamá,Croácia
+23/06/2026 19:00,L,Inglaterra,Gana
+27/06/2026 19:00,L,Panamá,Inglaterra
+27/06/2026 19:00,L,Croácia,Gana`;
 
 const MONTHS = { "06":"JUN", "07":"JUL" };
-const NOW_VAL = 612;
 
-function dateVal(ddmmyyyy) {
-  const [d, m] = ddmmyyyy.split("/");
-  return parseInt(m, 10) * 100 + parseInt(d, 10);
+function parseDate(str) {
+  const [dPart, tPart] = str.split(" ");
+  const [d, m, y] = dPart.split("/").map(Number);
+  const [hh, mm] = (tPart || "00:00").split(":").map(Number);
+  return new Date(y, m - 1, d, hh, mm);
 }
+
 function fmtDate(ddmmyyyy) {
-  const [d, m] = ddmmyyyy.split("/");
+  const [d, m] = ddmmyyyy.split(" ")[0].split("/");
   return `${d} ${MONTHS[m] || m}`;
 }
 
-const SOON_LABELS = { 0: "Faltam 2h", 1: "Faltam 5h", 2: "Faltam 9h" };
-let _soonCount = 0;
-
 export const MATCHES = RAW_MATCHES.trim().split("\n").map((line, i) => {
-  const [date, group, home, away] = line.split(",");
-  const v = dateVal(date);
+  const [dateStr, group, home, away] = line.split(",");
+  const matchDate = parseDate(dateStr);
+  const now = new Date();
+  const diffMs = matchDate - now;
+  const diffHrs = diffMs / (1000 * 60 * 60);
+
   let status = "open", label = null;
-  if (v <= NOW_VAL) {
+  if (diffMs <= 0) {
     status = "locked";
-  } else if (v === NOW_VAL + 1) {
+  } else if (diffHrs <= 24) {
     status = "soon";
-    label = SOON_LABELS[_soonCount % 3] || "Faltam 12h";
-    _soonCount++;
+    label = `Faltam ${Math.ceil(diffHrs)}h`;
   }
+
   return {
     id: `m${i}`,
-    date, dateLabel: fmtDate(date), v,
+    date: dateStr.split(" ")[0],
+    dateLabel: fmtDate(dateStr),
     group, home, away,
     homeCode: TEAMS[home], awayCode: TEAMS[away],
     status, statusLabel: label,
-    realHome: status === "locked" ? (i % 3) : null,
-    realAway: status === "locked" ? ((i + 1) % 2) : null,
+    realHome: null, // Should come from API eventually
+    realAway: null,
   };
 });
 
