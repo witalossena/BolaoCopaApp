@@ -25,8 +25,8 @@ export function Admin({ allUsers, togglePaid }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
 
-  const total = allUsers.length;
-  const paid = allUsers.filter(u => u.paid).length;
+  const total = allUsers?.length || 0;
+  const paid = allUsers?.filter(u => u.isPaid).length || 0;
   const pending = total - paid;
 
   const run = (key, label) => {
@@ -75,27 +75,27 @@ export function Admin({ allUsers, togglePaid }) {
             </span>
           ))}
         </div>
-        {allUsers.map(u => (
-          <div key={u.handle || u.user}
+        {allUsers?.map(u => (
+          <div key={u.id || u.handle}
             className="grid grid-cols-[1fr_72px_110px_88px] sm:grid-cols-[1fr_100px_130px_100px] items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 shrink-0 rounded-full bg-surface2 border border-edge grid place-items-center font-display text-xs text-cream">
-                {u.name[0]}
+                {u.name?.[0] || "?"}
               </span>
               <div className="min-w-0">
                 <div className="font-cond font-bold text-cream truncate text-sm">{u.name}</div>
-                <div className="text-mute2 text-xs truncate">{u.handle || u.user}</div>
+                <div className="text-mute2 text-xs truncate">{u.handle}</div>
               </div>
             </div>
-            <span className="text-right font-cond font-bold text-cream text-sm">{u.groupPts + u.awardPts}</span>
+            <span className="text-right font-cond font-bold text-cream text-sm">{u.totalPts ?? (u.groupPts + u.awardPts)}</span>
             <div>
-              {u.paid
+              {u.isPaid
                 ? <Badge tone="green" icon="check">Pago</Badge>
                 : <Badge tone="amber" icon="clock">Pendente</Badge>}
             </div>
             <button onClick={() => togglePaid(u)}
               className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left">
-              {u.paid ? "Marcar pend." : "Marcar pago"}
+              {u.isPaid ? "Marcar pend." : "Marcar pago"}
             </button>
           </div>
         ))}

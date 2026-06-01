@@ -9,7 +9,7 @@ import { MataMata } from './screens/MataMata';
 import { Ranking } from './screens/Ranking';
 import { Desempenho } from './screens/Desempenho';
 import { Admin } from './screens/Admin';
-import { rankingService, authService } from './services/api';
+import { rankingService, authService, adminService } from './services/api';
 
 const STORE_KEY = "bolao2026_v1";
 
@@ -52,6 +52,20 @@ export default function App() {
     fetchRanking();
   }, [view]);
 
+  useEffect(() => {
+    if (view === "admin") {
+      const fetchAdminUsers = async () => {
+        try {
+          const data = await adminService.getUsers();
+          setAdminUsers(data);
+        } catch (err) {
+          console.error("Failed to fetch admin users:", err);
+        }
+      };
+      fetchAdminUsers();
+    }
+  }, [view]);
+
   const setScore = (id, side, val) => {
     const clean = val === "" ? "" : String(Math.max(0, Math.min(20, parseInt(val, 10) || 0)));
     setScores(s => ({ ...s, [id]: { ...(s[id] || {}), [side]: clean } }));
@@ -70,9 +84,22 @@ export default function App() {
     setView("landing"); 
   };
 
-  const togglePaid = (target) => {
-    // This part might need backend integration later
-    if (user && idOf(user) === idOf(target)) setUser(u => ({ ...u, paid: !u.paid }));
+  const togglePaid = async (target) => {
+    try {
+      const newStatus = !target.isPaid;
+      await adminService.togglePayment(target.id, newStatus);
+      
+      // Update local state
+      setAdminUsers(prev => prev.map(u => 
+        u.id === target.id ? { ...u, isPaid: newStatus } : u
+      ));
+
+      if (user && user.id === target.id) {
+        setUser(u => ({ ...u, isPaid: newStatus }));
+      }
+    } catch (err) {
+      console.error("Failed to toggle payment:", err);
+    }
   };
 
   const ranking = useMemo(() => {

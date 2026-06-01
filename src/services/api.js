@@ -62,4 +62,25 @@ export const rankingService = {
   }
 };
 
+export const adminService = {
+  getStats: async () => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
+  getUsers: async () => {
+    const response = await api.get('/admin/users');
+    return response.data;
+  },
+  togglePayment: async (userId, isPaid) => {
+    const response = await api.patch(`/admin/users/${userId}/payment`, isPaid, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+  updateMatchResult: async (matchId, homeScore, awayScore) => {
+    const response = await api.post('/admin/match-result', { matchId, homeScore, awayScore });
+    return response.data;
+  }
+};
+
 export default api;

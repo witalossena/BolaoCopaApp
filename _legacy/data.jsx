@@ -187,13 +187,3 @@ const SPECIAL_FIELDS = [
 ];
 
 const ALL_TEAMS = Object.keys(TEAMS).sort((a,b)=>a.localeCompare(b,'pt'));
-
-/* ---------------- Usuários mockados (ranking + admin) ---------------- */
-const MOCK_USERS = [
-  { name:"Marina Costa",     user:"@maricosta",  groupPts:185, awardPts:130, exact:42, paid:true  },
-  { name:"Rafael Andrade",   user:"@rafa10",     groupPts:170, awardPts:120, exact:38, paid:true  },
-  { name:"Juliana Mendes",   user:"@jumendes",   groupPts:160, awardPts:95,  exact:31, paid:false },
-  { name:"Bruno Tavares",    user:"@btavares",   groupPts:140, awardPts:110, exact:28, paid:true  },
-  { name:"Camila Rocha",     user:"@camirocha",  groupPts:135, awardPts:85,  exact:25, paid:false },
-  { name:"Diego Pinheiro",   user:"@diegop",     groupPts:120, awardPts:70,  exact:22, paid:true  },
-];
