@@ -3,22 +3,36 @@ import { Logo } from '../components/ui/Logo';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Field } from '../components/ui/Field';
+import { authService } from '../services/api';
 
 export function AuthScreen({ onAuth, go }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", handle: "", email: "", pass: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    const name = form.name.trim() || (mode === "login" ? "Você" : "Novo Palpiteiro");
-    onAuth({
-      name,
-      handle: form.handle.trim()
-        ? (form.handle[0] === "@" ? form.handle : "@" + form.handle)
-        : "@voce",
-      email: form.email,
-    });
+    setLoading(true);
+    setError(null);
+    
+    try {
+      if (mode === "signup") {
+        await authService.register(form.name, form.handle, form.email, form.pass);
+        // Automatically login after register
+        const data = await authService.login(form.email, form.pass);
+        onAuth(data.user);
+      } else {
+        const data = await authService.login(form.email, form.pass);
+        onAuth(data.user);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Ocorreu um erro. Verifique os dados.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,7 +55,7 @@ export function AuthScreen({ onAuth, go }) {
 
           <div className="grid grid-cols-2 gap-1 p-1 bg-surface2 rounded-full border border-edge mb-6">
             {[["login", "Entrar"], ["signup", "Cadastrar"]].map(([k, l]) => (
-              <button key={k} onClick={() => setMode(k)}
+              <button key={k} onClick={() => { setMode(k); setError(null); }}
                 className={`py-2.5 rounded-full font-cond font-semibold tracking-wide text-sm transition-all
                   ${mode === k
                     ? "bg-grass text-bg shadow-[0_6px_18px_-8px_rgba(52,199,94,.7)]"
@@ -53,6 +67,11 @@ export function AuthScreen({ onAuth, go }) {
 
           <Card pad={false} className="p-6">
             <form onSubmit={submit} className="space-y-4">
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg text-center font-cond">
+                  {error}
+                </div>
+              )}
               {mode === "signup" && (
                 <>
                   <Field label="Nome completo" icon="user" value={form.name} onChange={set("name")} placeholder="Ex.: João Silva" />
@@ -70,8 +89,8 @@ export function AuthScreen({ onAuth, go }) {
                 </div>
               )}
 
-              <Button type="submit" size="lg" className="w-full" iconRight="arrowRight">
-                {mode === "login" ? "Entrar" : "Criar conta e palpitar"}
+              <Button type="submit" size="lg" className="w-full" iconRight="arrowRight" disabled={loading}>
+                {loading ? "Processando..." : (mode === "login" ? "Entrar" : "Criar conta e palpitar")}
               </Button>
             </form>
           </Card>
@@ -79,7 +98,7 @@ export function AuthScreen({ onAuth, go }) {
           <p className="text-center text-mute2 text-sm mt-5">
             {mode === "login" ? "Ainda não tem conta? " : "Já tem conta? "}
             <button
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(null); }}
               className="font-cond font-semibold text-grass-400 hover:underline">
               {mode === "login" ? "Cadastre-se" : "Faça login"}
             </button>
