@@ -40,14 +40,18 @@ function BigStat({ icon, value, suffix, label, tone = "grass" }) {
 
 export function Desempenho({ user, ranking, setView }) {
   const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
-  const total = user.groupPts + user.awardPts;
-  const ahead = pos > 1 ? (ranking[pos - 2].groupPts + ranking[pos - 2].awardPts) - total : 0;
+  const pts = user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 };
+  const total = pts.total;
+  
+  // Calculate distance to leader
+  const leaderTotal = ranking.length > 0 ? ranking[0].total : 0;
+  const distance = pos === 1 ? "Você lidera! 🏆" : `${leaderTotal - total} pts`;
 
   return (
     <div>
       <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`}>Meu Desempenho</PageTitle>
 
-      {!user.paid && (
+      {!user.isPaid && (
         <Card className="mb-6 -mt-2 border-gold/40 bg-gold-dim/30 flex flex-wrap items-center gap-4 justify-between">
           <div className="flex items-center gap-3">
             <span className="text-gold-400"><Icon name="alert" size={22} /></span>
@@ -62,9 +66,9 @@ export function Desempenho({ user, ranking, setView }) {
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <BigStat icon="zap" value={total} label="Pontos totais acumulados" />
-        <BigStat icon="trophy" value={`${pos}º`} label={`Posição entre ${ranking.length} participantes`} tone="gold" />
+        <BigStat icon="trophy" value={`${pos > 0 ? pos : '-'}º`} label={`Posição entre ${ranking.length} participantes`} tone="gold" />
         <Card className="flex items-center justify-center">
-          <Ring value={user.exactRate} label="PLACARES EXATOS" />
+          <Ring value={Math.round(pts.exactRate * 100) || 0} label="PLACARES EXATOS" />
         </Card>
       </div>
 
@@ -72,8 +76,9 @@ export function Desempenho({ user, ranking, setView }) {
         <Card accent>
           <SectionLabel icon="trendingUp">De onde vêm seus pontos</SectionLabel>
           {[
-            ["Fase de grupos", user.groupPts, "#34c75e"],
-            ["Pódio & premiações", user.awardPts, "#e3b23c"],
+            ["Fase de grupos", pts.groupPts, "#34c75e"],
+            ["Mata-mata", pts.knockoutPts, "#5aa9e6"],
+            ["Pódio & premiações", pts.specialPts, "#e3b23c"],
           ].map(([l, v, col]) => (
             <div key={l} className="mb-4 last:mb-0">
               <div className="flex justify-between font-cond text-sm mb-1.5">
@@ -92,9 +97,9 @@ export function Desempenho({ user, ranking, setView }) {
           <SectionLabel icon="target">Resumo</SectionLabel>
           <div className="space-y-3">
             {[
-              ["Placares exatos acertados", `${user.exact}`, "ball"],
-              ["Distância para o líder", pos === 1 ? "Você lidera! 🏆" : `${ahead} pts`, "arrowUpRight"],
-              ["Inscrição", user.paid ? "Confirmada" : "Pendente", "wallet"],
+              ["Placares exatos acertados", `${pts.exactCount}`, "ball"],
+              ["Distância para o líder", distance, "arrowUpRight"],
+              ["Inscrição", user.isPaid ? "Confirmada" : "Pendente", "wallet"],
             ].map(([l, v, ic]) => (
               <div key={l} className="flex items-center justify-between py-2 border-b border-edge/50 last:border-0">
                 <span className="flex items-center gap-2.5 text-mute text-sm">
