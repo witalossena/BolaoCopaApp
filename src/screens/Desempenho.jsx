@@ -40,9 +40,10 @@ function BigStat({ icon, value, suffix, label, tone = "grass" }) {
   );
 }
 
-export function Desempenho({ user, ranking, setView }) {
+export function Desempenho({ user, ranking, setView, refreshProfile }) {
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
   const pts = user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 };
@@ -67,6 +68,12 @@ export function Desempenho({ user, ranking, setView }) {
   const copyPix = () => {
     if (!pixData) return;
     navigator.clipboard.writeText(pixData.qrCodeCopyPaste);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshProfile();
+    setRefreshing(false);
   };
 
   return (
@@ -104,9 +111,14 @@ export function Desempenho({ user, ranking, setView }) {
                   <div className="flex-1 bg-bg/60 border border-edge rounded-xl px-4 py-3 font-mono text-[11px] text-mute truncate">
                     {pixData.qrCodeCopyPaste}
                   </div>
-                  <Button variant="secondary" icon="copy" onClick={copyPix}>
-                    Copiar Código
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" icon="copy" onClick={copyPix}>
+                      Copiar
+                    </Button>
+                    <Button variant="primary" icon="refresh" onClick={handleRefresh} disabled={refreshing}>
+                      {refreshing ? "..." : "Já paguei"}
+                    </Button>
+                  </div>
                 </div>
                 <p className="mt-4 text-xs text-mute2 italic">
                   * Após o pagamento, o status será atualizado automaticamente em alguns instantes.

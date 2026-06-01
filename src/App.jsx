@@ -78,6 +78,16 @@ export default function App() {
     setView("palpites");
   };
 
+  const refreshProfile = async () => {
+    try {
+      const updatedUser = await authService.getProfile();
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (err) {
+      console.error("Failed to refresh profile:", err);
+    }
+  };
+
   const logout = () => { 
     authService.logout();
     setUser(null); 
@@ -135,7 +145,7 @@ export default function App() {
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
     case "matamata":   screen = <MataMata />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
-    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} />; break;
+    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
     case "regras":     screen = <Regras />; break;
     case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
