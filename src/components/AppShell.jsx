@@ -40,12 +40,14 @@ export function AppShell({ user, view, setView, onLogout, children }) {
           <NavButton key={it.id} item={it} active={view === it.id}
             onClick={() => { setView(it.id); setDrawer(false); }} />
         ))}
-        <div className="pt-3 mt-3 border-t border-edge/60">
-          <NavButton
-            item={{ id: "admin", label: "Painel Admin", icon: "settings" }}
-            active={view === "admin"}
-            onClick={() => { setView("admin"); setDrawer(false); }} />
-        </div>
+        {user?.role === "Admin" && (
+          <div className="pt-3 mt-3 border-t border-edge/60">
+            <NavButton
+              item={{ id: "admin", label: "Painel Admin", icon: "settings" }}
+              active={view === "admin"}
+              onClick={() => { setView("admin"); setDrawer(false); }} />
+          </div>
+        )}
       </nav>
 
       <div className="p-3 border-t border-edge/70">
