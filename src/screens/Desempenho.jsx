@@ -108,8 +108,8 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
                   Ou copie e cole o código abaixo no aplicativo do seu banco para completar o pagamento de <strong>R$ 30,00</strong>.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 bg-bg/60 border border-edge rounded-xl px-4 py-3 font-mono text-[11px] text-mute truncate">
-                    {pixData.qrCodeCopyPaste}
+                  <div className="flex-1 min-w-0 bg-bg/60 border border-edge rounded-xl px-4 py-3 font-mono text-[11px] text-mute overflow-hidden">
+                    <span className="block truncate">{pixData.qrCodeCopyPaste}</span>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="secondary" icon="copy" onClick={copyPix}>
