@@ -143,7 +143,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
-    case "matamata":   screen = <MataMata />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
     case "regras":     screen = <Regras />; break;

@@ -1,12 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { PageTitle } from '../components/ui/PageTitle';
 import { TeamBadge } from '../components/ui/TeamBadge';
 
-const R16_SEEDS = [
-  "Brasil","Suíça","Argentina","Holanda","Espanha","Croácia","França","Japão",
-  "Inglaterra","Senegal","Portugal","México","Alemanha","Uruguai","Bélgica","Marrocos",
+// Standard 8-group WC bracket seeding: [group, "first"|"second"]
+const R16_BRACKET = [
+  ["A","first"], ["B","second"],
+  ["C","first"], ["D","second"],
+  ["E","first"], ["F","second"],
+  ["G","first"], ["H","second"],
+  ["B","first"], ["A","second"],
+  ["D","first"], ["C","second"],
+  ["F","first"], ["E","second"],
+  ["H","first"], ["G","second"],
 ];
 const ROUND_NAMES = ["Oitavas", "Quartas", "Semifinal", "Final"];
 
@@ -26,12 +33,20 @@ function BracketSlot({ name, picked, onClick, dim }) {
   );
 }
 
-export function MataMata() {
+export function MataMata({ ranks = {} }) {
   const [winners, setWinners] = useState({});
   const ROUNDS = 4;
 
+  const seeds = useMemo(
+    () => R16_BRACKET.map(([g, pos]) => ranks[g]?.[pos] || null),
+    [ranks]
+  );
+
+  // Reset bracket when seeds change to avoid stale winner references
+  useEffect(() => { setWinners({}); }, [seeds]);
+
   const getTeams = (round, m) => {
-    if (round === 0) return [R16_SEEDS[m * 2], R16_SEEDS[m * 2 + 1]];
+    if (round === 0) return [seeds[m * 2], seeds[m * 2 + 1]];
     return [winners[`${round - 1}-${m * 2}`], winners[`${round - 1}-${m * 2 + 1}`]];
   };
 
@@ -51,6 +66,7 @@ export function MataMata() {
 
   const matchesIn = (round) => 8 / Math.pow(2, round);
   const champion = winners[`${ROUNDS - 1}-0`];
+  const missingGroups = ["A","B","C","D","E","F","G","H"].filter(g => !ranks[g]?.first || !ranks[g]?.second);
 
   return (
     <div>
@@ -59,6 +75,15 @@ export function MataMata() {
         Clique na seleção que você acha que vence cada confronto — ela avança para a próxima chave.
         Cada acerto vale <b className="text-grass-400">10 pts</b>.
       </p>
+
+      {missingGroups.length > 0 && (
+        <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-gold/40 bg-gold-dim/20 px-4 py-3">
+          <span className="text-gold mt-0.5 shrink-0"><Icon name="clock" size={16} /></span>
+          <p className="font-cond text-sm text-gold-400">
+            Defina 1º e 2º lugar nos grupos <b>{missingGroups.join(", ")}</b> para preencher as oitavas automaticamente.
+          </p>
+        </div>
+      )}
 
       {champion && (
         <Card className="mb-6 border-gold/40 bg-gold-dim/30 flex items-center gap-4 pop">
