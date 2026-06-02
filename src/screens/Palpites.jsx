@@ -27,7 +27,7 @@ function MatchRow({ match, score, onScore }) {
       </div>
 
       <div className="flex-1 flex items-center justify-end min-w-0 gap-2">
-        <span className="font-cond font-semibold text-cream text-sm truncate text-right hidden xs:block sm:block">{match.home}</span>
+        <span className="font-cond font-semibold text-cream text-sm truncate text-right hidden sm:block">{match.home}</span>
         <TeamBadge name={match.home} showName={false} />
       </div>
 
@@ -43,10 +43,10 @@ function MatchRow({ match, score, onScore }) {
 
       <div className="flex-1 flex items-center min-w-0 gap-2">
         <TeamBadge name={match.away} showName={false} />
-        <span className="font-cond font-semibold text-cream text-sm truncate">{match.away}</span>
+        <span className="font-cond font-semibold text-cream text-sm truncate hidden sm:block">{match.away}</span>
       </div>
 
-      <div className="w-24 shrink-0 flex justify-end">
+      <div className="shrink-0 flex justify-end sm:w-24">
         {locked && <Badge tone="locked" icon="lock">Encerrada</Badge>}
         {soon && <Badge tone="amber" icon="clock">{match.statusLabel}</Badge>}
         {match.status === "open" && <span className="text-mute2"><Icon name="chevronRight" size={16} /></span>}
