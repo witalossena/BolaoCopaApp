@@ -98,11 +98,11 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
           </div>
 
           {pixData && (
-            <div className="mt-6 pt-6 border-t border-gold/20 flex flex-col md:flex-row items-center gap-8 fade-in">
+            <div className="mt-6 pt-6 border-t border-gold/20 flex flex-col md:flex-row items-center gap-8 fade-in overflow-hidden">
               <div className="bg-white p-3 rounded-2xl shadow-lg shrink-0">
                 <img src={`data:image/jpeg;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" className="w-40 h-40" />
               </div>
-              <div className="flex-1 min-w-0 text-center md:text-left">
+              <div className="flex-1 min-w-0 w-full text-center md:text-left">
                 <h3 className="font-display text-xl text-cream mb-2">Escaneie o QR Code</h3>
                 <p className="text-mute text-sm mb-4">
                   Ou copie e cole o código abaixo no aplicativo do seu banco para completar o pagamento de <strong>R$ 30,00</strong>.
