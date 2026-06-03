@@ -118,7 +118,11 @@ function GroupRanks({ group, ranks, setRank }) {
 }
 
 function buildWhatsAppText(scores, ranks) {
-  const lines = ["\u{1F3C6} *Meus Palpites - Copa do Mundo 2026*\n"];
+  const trophy    = String.fromCodePoint(0x1F3C6); // 🏆
+  const clipboard = String.fromCodePoint(0x1F4CB); // 📋
+  const gold      = String.fromCodePoint(0x1F947); // 🥇
+  const silver    = String.fromCodePoint(0x1F948); // 🥈
+  const lines = [`${trophy} *Meus Palpites - Copa do Mundo 2026*\n`];
 
   for (const gId of GROUP_ORDER) {
     const group = GROUPS.find(g => g.id === gId);
@@ -135,10 +139,10 @@ function buildWhatsAppText(scores, ranks) {
     const hasRanks = r?.first || r?.second;
 
     if (groupLines.length > 0 || hasRanks) {
-      lines.push(`\u{1F4CB} *GRUPO ${gId}*`);
+      lines.push(`${clipboard} *GRUPO ${gId}*`);
       groupLines.forEach(l => lines.push(l));
       if (hasRanks) {
-        lines.push(`\u{1F947} 1º: ${r.first || "?"}  \u{1F948} 2º: ${r.second || "?"}`);
+        lines.push(`${gold} 1º: ${r.first || "?"}  ${silver} 2º: ${r.second || "?"}`);
       }
       lines.push("");
     }
