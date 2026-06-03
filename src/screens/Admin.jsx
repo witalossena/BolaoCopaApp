@@ -286,7 +286,7 @@ export function Admin({ allUsers, togglePaid }) {
                   </div>
                   {rms.map(m => {
                     const s = localScores[m.id] || { h: "", a: "" };
-                    const t = localTeams[m.id] || { h: m.homeTeam, a: m.awayTeam };
+                    const t = { h: localTeams[m.id]?.h ?? m.homeTeam ?? "", a: localTeams[m.id]?.a ?? m.awayTeam ?? "" };
                     const hasResult = m.realHome != null && m.realAway != null;
                     const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
                     const canSaveTeams = t.h && t.a && savingTeams !== m.id;
