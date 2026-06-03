@@ -29,7 +29,7 @@ export function Admin({ allUsers, togglePaid }) {
   const [matches, setMatches] = useState([]);
   const [activeGroup, setActiveGroup] = useState("A");
   const [localScores, setLocalScores] = useState({});
-  const [savingMatch, setSavingMatch] = useState(null);
+  const [savingGroup, setSavingGroup] = useState(false);
 
   useEffect(() => {
     matchService.getMatches().then(data => {
@@ -85,22 +85,30 @@ export function Admin({ allUsers, togglePaid }) {
     }
   };
 
-  const saveResult = async (matchId) => {
-    const s = localScores[matchId];
-    if (!s || s.h === "" || s.a === "") return;
-    setSavingMatch(matchId);
+  const saveGroup = async () => {
+    const toSave = groupMatches.filter(m => {
+      const s = localScores[m.id];
+      return s && s.h !== "" && s.a !== "";
+    });
+    if (toSave.length === 0) return;
+    setSavingGroup(true);
     try {
-      await adminService.updateMatchResult(matchId, parseInt(s.h, 10), parseInt(s.a, 10));
-      setMatches(prev => prev.map(m =>
-        m.id === matchId
-          ? { ...m, status: "Locked", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10) }
-          : m
-      ));
-      showToast("Resultado salvo.");
+      await Promise.all(toSave.map(m => {
+        const s = localScores[m.id];
+        return adminService.updateMatchResult(m.id, parseInt(s.h, 10), parseInt(s.a, 10));
+      }));
+      setMatches(prev => prev.map(m => {
+        const s = localScores[m.id];
+        if (toSave.find(t => t.id === m.id) && s) {
+          return { ...m, status: "Locked", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10) };
+        }
+        return m;
+      }));
+      showToast(`${toSave.length} resultado(s) do Grupo ${activeGroup} salvos.`);
     } catch {
-      showToast("Erro ao salvar resultado.");
+      showToast("Erro ao salvar resultados.");
     } finally {
-      setSavingMatch(null);
+      setSavingGroup(false);
     }
   };
 
@@ -109,6 +117,7 @@ export function Admin({ allUsers, togglePaid }) {
   };
 
   const groupMatches = matches.filter(m => m.group === activeGroup);
+  const groupFilled = groupMatches.filter(m => { const s = localScores[m.id]; return s && s.h !== "" && s.a !== ""; }).length;
   const launchedCount = matches.filter(m => m.realHome != null).length;
 
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -171,9 +180,8 @@ export function Admin({ allUsers, togglePaid }) {
           {groupMatches.map(m => {
             const s = localScores[m.id] || { h: "", a: "" };
             const hasResult = m.realHome != null && m.realAway != null;
-            const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
             return (
-              <div key={m.id} className="px-5 py-3 flex items-center gap-3">
+              <div key={m.id} className={`px-5 py-3 flex items-center gap-3 ${hasResult ? "opacity-60" : ""}`}>
                 <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
 
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
@@ -195,14 +203,18 @@ export function Admin({ allUsers, togglePaid }) {
                   <TeamBadge name={m.awayTeam} showName={false} size="sm" />
                   <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                 </div>
-
-                <Button size="sm" variant={hasResult ? "secondary" : "primary"}
-                  disabled={!canSave} onClick={() => saveResult(m.id)}>
-                  {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
-                </Button>
               </div>
             );
           })}
+        </div>
+
+        <div className="px-5 py-4 border-t border-edge flex items-center justify-between gap-3">
+          <span className="font-cond text-mute2 text-sm">
+            {groupFilled}/{groupMatches.length} jogos preenchidos
+          </span>
+          <Button variant="primary" icon="checkCircle" disabled={groupFilled === 0 || savingGroup} onClick={saveGroup}>
+            {savingGroup ? "Salvando..." : `Salvar Grupo ${activeGroup}`}
+          </Button>
         </div>
       </Card>
 
