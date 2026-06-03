@@ -56,6 +56,10 @@ export const predictionService = {
     const response = await api.get('/predictions/me');
     return response.data;
   },
+  getPredictionHistory: async () => {
+    const response = await api.get('/predictions/history');
+    return response.data;
+  },
   submitMatchPrediction: async (matchId, homeScore, awayScore) => {
     const response = await api.post('/predictions/match', { matchId, homeScore, awayScore });
     return response.data;

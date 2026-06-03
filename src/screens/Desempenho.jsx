@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageTitle } from '../components/ui/PageTitle';
 import { SectionLabel } from '../components/ui/SectionLabel';
-import { paymentService } from '../services/api';
+import { TeamBadge } from '../components/ui/TeamBadge';
+import { paymentService, predictionService } from '../services/api';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -40,18 +41,33 @@ function BigStat({ icon, value, suffix, label, tone = "grass" }) {
   );
 }
 
+function ptsTone(pts) {
+  if (pts >= 15) return { bg: "bg-grass-dim/60 text-grass-400 border-grass/30", label: "Exato" };
+  if (pts >= 10) return { bg: "bg-blue-900/40 text-blue-300 border-blue-500/30", label: "+Saldo" };
+  if (pts >= 5)  return { bg: "bg-gold-dim/60 text-gold-400 border-gold/30", label: "Resultado" };
+  return { bg: "bg-danger/10 text-danger border-danger/20", label: "Errou" };
+}
+
 export function Desempenho({ user, ranking, setView, refreshProfile }) {
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    predictionService.getPredictionHistory().then(setHistory).catch(() => {});
+  }, []);
 
   const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
   const pts = user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 };
   const total = pts.total;
-  
-  // Calculate distance to leader
+
   const leaderTotal = ranking.length > 0 ? ranking[0].total : 0;
   const distance = pos === 1 ? "Você lidera! 🏆" : `${leaderTotal - total} pts`;
+
+  const bestPred = history.length > 0
+    ? history.reduce((a, b) => (b.points > a.points ? b : a), history[0])
+    : null;
 
   const handlePay = async () => {
     setLoadingPix(true);
@@ -75,6 +91,8 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
     await refreshProfile();
     setRefreshing(false);
   };
+
+  const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
   return (
     <div>
@@ -137,7 +155,7 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid lg:grid-cols-2 gap-5 mb-5">
         <Card accent>
           <SectionLabel icon="trendingUp">De onde vêm seus pontos</SectionLabel>
           {[
@@ -173,12 +191,62 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
                 <span className="font-cond font-bold text-cream">{v}</span>
               </div>
             ))}
+
+            {bestPred && (
+              <div className="flex items-start justify-between py-2 border-t border-edge/50">
+                <span className="flex items-center gap-2.5 text-mute text-sm">
+                  <Icon name="star" size={16} className="text-gold" />Melhor palpite
+                </span>
+                <div className="text-right">
+                  <div className="font-cond font-bold text-cream text-sm">
+                    {bestPred.homeTeam} {bestPred.predictedHome}×{bestPred.predictedAway} {bestPred.awayTeam}
+                  </div>
+                  <div className="font-cond text-gold text-xs">{bestPred.points} pts</div>
+                </div>
+              </div>
+            )}
           </div>
           <Button variant="secondary" className="w-full mt-5" iconRight="arrowRight" onClick={() => setView("ranking")}>
             Ver ranking completo
           </Button>
         </Card>
       </div>
+
+      {history.length > 0 && (
+        <Card accent>
+          <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
+          <div className="divide-y divide-edge/40">
+            {history.map((item, i) => {
+              const tone = ptsTone(item.points);
+              return (
+                <div key={i} className="py-3 flex items-center gap-3">
+                  <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(item.matchDate)}</span>
+
+                  <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.homeTeam}</span>
+                    <TeamBadge name={item.homeTeam} showName={false} size="sm" />
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0 font-cond text-sm">
+                    <span className="text-mute2">{item.predictedHome}×{item.predictedAway}</span>
+                    <span className="text-mute2 mx-1 text-xs">→</span>
+                    <span className="text-cream font-bold">{item.realHome}×{item.realAway}</span>
+                  </div>
+
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <TeamBadge name={item.awayTeam} showName={false} size="sm" />
+                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.awayTeam}</span>
+                  </div>
+
+                  <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
+                    {item.points > 0 ? `+${item.points}` : "0"} pts
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
