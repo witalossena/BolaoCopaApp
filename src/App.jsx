@@ -9,7 +9,7 @@ import { MataMata } from './screens/MataMata';
 import { Ranking } from './screens/Ranking';
 import { Desempenho } from './screens/Desempenho';
 import { Admin } from './screens/Admin';
-import { rankingService, authService, adminService } from './services/api';
+import { rankingService, authService, adminService, matchService } from './services/api';
 
 const STORE_KEY = "bolao2026_v1";
 
@@ -35,6 +35,7 @@ export default function App() {
   const [specials, setSpecials]     = useState(saved.specials || {});
   const [adminUsers, setAdminUsers] = useState(saved.adminUsers || null);
   const [realRanking, setRealRanking] = useState([]);
+  const [matchStatuses, setMatchStatuses] = useState({});
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers }));
@@ -50,6 +51,15 @@ export default function App() {
       }
     };
     fetchRanking();
+  }, [view]);
+
+  useEffect(() => {
+    if (!user) return;
+    matchService.getMatches().then(data => {
+      const statuses = {};
+      data.forEach(m => { if (m.externalId) statuses[m.externalId] = m.status.toLowerCase(); });
+      setMatchStatuses(statuses);
+    }).catch(() => {});
   }, [view]);
 
   useEffect(() => {
@@ -141,7 +151,7 @@ export default function App() {
 
   let screen = null;
   switch (view) {
-    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />; break;
+    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;

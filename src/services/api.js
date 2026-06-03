@@ -91,6 +91,12 @@ export const adminService = {
   calculateScores: async () => {
     const response = await api.post('/admin/calculate-scores');
     return response.data;
+  },
+  lockMatch: async (matchId, isLocked) => {
+    const response = await api.patch(`/admin/matches/${matchId}/lock`, isLocked, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
   }
 };
 

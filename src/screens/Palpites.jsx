@@ -10,9 +10,11 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { Select } from '../components/ui/Select';
 import { TEAMS } from '../data';
 
-function MatchRow({ match, score, onScore }) {
-  const locked = match.status === "locked";
-  const soon = match.status === "soon";
+function MatchRow({ match, score, onScore, matchStatuses = {} }) {
+  const apiStatus = matchStatuses[match.id];
+  const effectiveStatus = apiStatus || match.status;
+  const locked = effectiveStatus === "locked";
+  const soon = !locked && effectiveStatus === "soon";
 
   const inputCls = `w-12 h-11 text-center text-lg font-cond font-bold rounded-lg border outline-none transition
     ${locked
@@ -84,7 +86,7 @@ function GroupRanks({ group, ranks, setRank }) {
   );
 }
 
-export function Palpites({ scores, setScore, ranks, setRank }) {
+export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {} }) {
   const [active, setActive] = useState("A");
   const group = GROUPS.find(g => g.id === active);
   const idx = GROUP_ORDER.indexOf(active);
@@ -163,7 +165,7 @@ export function Palpites({ scores, setScore, ranks, setRank }) {
         <div className="divide-y divide-edge/40 mt-2">
           {group.matches.map(m => (
             <MatchRow key={m.id} match={m} score={scores[m.id]}
-              onScore={(side, val) => setScore(m.id, side, val)} />
+              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} />
           ))}
         </div>
 

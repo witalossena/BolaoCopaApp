@@ -30,6 +30,7 @@ export function Admin({ allUsers, togglePaid }) {
   const [activeGroup, setActiveGroup] = useState("A");
   const [localScores, setLocalScores] = useState({});
   const [savingMatch, setSavingMatch] = useState(null);
+  const [lockingMatch, setLockingMatch] = useState(null);
 
   useEffect(() => {
     matchService.getMatches().then(data => {
@@ -101,6 +102,22 @@ export function Admin({ allUsers, togglePaid }) {
       showToast("Erro ao salvar resultado.");
     } finally {
       setSavingMatch(null);
+    }
+  };
+
+  const toggleLock = async (m) => {
+    const newLocked = m.status !== "Locked";
+    setLockingMatch(m.id);
+    try {
+      await adminService.lockMatch(m.id, newLocked);
+      setMatches(prev => prev.map(x =>
+        x.id === m.id ? { ...x, status: newLocked ? "Locked" : "Open" } : x
+      ));
+      showToast(newLocked ? "Apostas travadas." : "Apostas desbloqueadas.");
+    } catch {
+      showToast("Erro ao alterar status.");
+    } finally {
+      setLockingMatch(null);
     }
   };
 
@@ -196,6 +213,14 @@ export function Admin({ allUsers, togglePaid }) {
                   <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                 </div>
 
+                <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
+                  title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
+                  className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                    ${m.status === "Locked"
+                      ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                      : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
+                  <Icon name="lock" size={13} />
+                </button>
                 <Button size="sm" variant={hasResult ? "secondary" : "primary"}
                   disabled={!canSave} onClick={() => saveResult(m.id)}>
                   {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
