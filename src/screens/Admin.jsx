@@ -341,7 +341,7 @@ export function Admin({ allUsers, togglePaid }) {
           <h2 className="font-display text-lg text-cream">Participantes</h2>
           <span className="font-cond text-mute2 text-sm">{total} no total</span>
         </div>
-        <div className="grid grid-cols-[1fr_48px_32px_72px] sm:grid-cols-[1fr_100px_130px_100px] px-5 py-2.5 border-b border-edge bg-surface2/40">
+        <div className="grid grid-cols-[1fr_48px_32px_72px] sm:grid-cols-[1fr_100px_130px_100px] gap-x-3 px-5 py-2.5 border-b border-edge bg-surface2/40">
           {["Participante", "Total", "Status", "Ação"].map((h, i) => (
             <span key={h} className={`font-cond font-semibold text-mute2 text-xs tracking-widest uppercase ${i === 1 ? "text-right" : ""}`}>
               {h}
@@ -350,7 +350,7 @@ export function Admin({ allUsers, togglePaid }) {
         </div>
         {allUsers?.map(u => (
           <div key={u.id || u.handle}
-            className="grid grid-cols-[1fr_48px_32px_72px] sm:grid-cols-[1fr_100px_130px_100px] items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
+            className="grid grid-cols-[1fr_48px_32px_72px] sm:grid-cols-[1fr_100px_130px_100px] gap-x-3 items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 shrink-0 rounded-full bg-surface2 border border-edge grid place-items-center font-display text-xs text-cream">
                 {u.name?.[0] || "?"}
