@@ -254,8 +254,8 @@ export function Admin({ allUsers, togglePaid }) {
               );
               return (
                 <div key={m.id} className="px-3 sm:px-5 py-3">
+                  <span className="font-cond text-mute2 text-xs block mb-1.5">{fmtDate(m.matchDate)}</span>
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="font-cond text-mute2 text-xs w-9 shrink-0">{fmtDate(m.matchDate)}</span>
                     <div className="shrink-0 sm:flex-1 flex items-center justify-end gap-2">
                       <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
                       <TeamBadge name={m.homeTeam} showName={false} size="sm" />
@@ -273,11 +273,6 @@ export function Admin({ allUsers, togglePaid }) {
                       <TeamBadge name={m.awayTeam} showName={false} size="sm" />
                       <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                     </div>
-                    <div className="hidden sm:flex items-center gap-2 shrink-0">
-                      {lockBtn}{saveBtn}
-                    </div>
-                  </div>
-                  <div className="flex sm:hidden items-center justify-end gap-2 mt-2">
                     {lockBtn}{saveBtn}
                   </div>
                 </div>
