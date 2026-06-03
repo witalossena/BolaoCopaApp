@@ -341,33 +341,34 @@ export function Admin({ allUsers, togglePaid }) {
           <h2 className="font-display text-lg text-cream">Participantes</h2>
           <span className="font-cond text-mute2 text-sm">{total} no total</span>
         </div>
-        <div className="grid grid-cols-[1fr_72px_110px_88px] sm:grid-cols-[1fr_100px_130px_100px] px-5 py-2.5 border-b border-edge bg-surface2/40">
-          {["Participante", "Total", "Status", "Ação"].map((h, i) => (
-            <span key={h} className={`font-cond font-semibold text-mute2 text-xs tracking-widest uppercase ${i === 1 ? "text-right" : ""}`}>
+        <div className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_80px_120px_100px] px-4 sm:px-5 py-2.5 border-b border-edge bg-surface2/40 gap-3">
+          {["Participante", "Status", "Ação"].map((h) => (
+            <span key={h} className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase">
               {h}
             </span>
           ))}
         </div>
         {allUsers?.map(u => (
           <div key={u.id || u.handle}
-            className="grid grid-cols-[1fr_72px_110px_88px] sm:grid-cols-[1fr_100px_130px_100px] items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
+            className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_80px_120px_100px] items-center px-4 sm:px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 shrink-0 rounded-full bg-surface2 border border-edge grid place-items-center font-display text-xs text-cream">
                 {u.name?.[0] || "?"}
               </span>
               <div className="min-w-0">
                 <div className="font-cond font-bold text-cream truncate text-sm">{u.name}</div>
-                <div className="text-mute2 text-xs truncate">{u.handle}</div>
+                <div className="text-mute2 text-xs truncate">{u.handle}
+                  <span className="ml-2 font-bold text-cream hidden sm:inline">{u.totalPts ?? (u.groupPts + u.awardPts)} pts</span>
+                </div>
               </div>
             </div>
-            <span className="text-right font-cond font-bold text-cream text-sm">{u.totalPts ?? (u.groupPts + u.awardPts)}</span>
             <div>
               {u.isPaid
                 ? <Badge tone="green" icon="check">Pago</Badge>
                 : <Badge tone="amber" icon="clock">Pendente</Badge>}
             </div>
             <button onClick={() => togglePaid(u)}
-              className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left">
+              className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left whitespace-nowrap">
               {u.isPaid ? "Marcar pend." : "Marcar pago"}
             </button>
           </div>
