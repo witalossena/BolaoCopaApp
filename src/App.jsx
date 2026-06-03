@@ -13,6 +13,18 @@ import { rankingService, authService, adminService, matchService, predictionServ
 
 const STORE_KEY = "bolao2026_v1";
 
+function externalIdToWinnerKey(externalId) {
+  if (!externalId) return null;
+  const r16 = externalId.match(/^ko_r16_(\d+)$/);
+  if (r16) return `0-${r16[1]}`;
+  const qf = externalId.match(/^ko_qf_(\d+)$/);
+  if (qf) return `1-${qf[1]}`;
+  const sf = externalId.match(/^ko_sf_(\d+)$/);
+  if (sf) return `2-${sf[1]}`;
+  if (externalId === 'ko_final') return '3-0';
+  return null;
+}
+
 function loadStore() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
   catch { return {}; }
@@ -37,6 +49,7 @@ export default function App() {
   const [realRanking, setRealRanking] = useState([]);
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
+  const [koWinners, setKoWinners] = useState({});
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers }));
@@ -90,6 +103,14 @@ export default function App() {
           });
           return merged;
         });
+      }
+      if (data.knockoutPredictions?.length > 0) {
+        const winnerMap = {};
+        data.knockoutPredictions.forEach(({ externalId, winnerTeam }) => {
+          const key = externalIdToWinnerKey(externalId);
+          if (key) winnerMap[key] = winnerTeam;
+        });
+        setKoWinners(winnerMap);
       }
     }).catch(() => {});
   }, [user?.id]);
@@ -185,7 +206,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
     case "regras":     screen = <Regras />; break;

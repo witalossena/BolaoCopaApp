@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { PageTitle } from '../components/ui/PageTitle';
 import { TeamBadge } from '../components/ui/TeamBadge';
+import { predictionService } from '../services/api';
 
 // Standard 8-group WC bracket seeding: [group, "first"|"second"]
 const R16_BRACKET = [
@@ -33,17 +34,21 @@ function BracketSlot({ name, picked, onClick, dim }) {
   );
 }
 
-export function MataMata({ ranks = {} }) {
-  const [winners, setWinners] = useState({});
+function getExternalId(round, m) {
+  if (round === 0) return `ko_r16_${m}`;
+  if (round === 1) return `ko_qf_${m}`;
+  if (round === 2) return `ko_sf_${m}`;
+  if (round === 3) return `ko_final`;
+  return null;
+}
+
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners }) {
   const ROUNDS = 4;
 
   const seeds = useMemo(
     () => R16_BRACKET.map(([g, pos]) => ranks[g]?.[pos] || null),
     [ranks]
   );
-
-  // Reset bracket when seeds change to avoid stale winner references
-  useEffect(() => { setWinners({}); }, [seeds]);
 
   const getTeams = (round, m) => {
     if (round === 0) return [seeds[m * 2], seeds[m * 2 + 1]];
@@ -52,6 +57,11 @@ export function MataMata({ ranks = {} }) {
 
   const pick = (round, m, team) => {
     if (!team) return;
+    const externalId = getExternalId(round, m);
+    const matchGuid = matchIdMap[externalId];
+    if (matchGuid) {
+      predictionService.submitKnockoutPrediction(matchGuid, team).catch(console.error);
+    }
     setWinners(prev => {
       const next = { ...prev };
       next[`${round}-${m}`] = team;
@@ -93,7 +103,7 @@ export function MataMata({ ranks = {} }) {
             <div className="font-display text-2xl text-gold-400">{champion}</div>
           </div>
           <button onClick={() => setWinners({})}
-            className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5">
+            className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5" type="button">
             <Icon name="refresh" size={15} />Recomeçar
           </button>
         </Card>
