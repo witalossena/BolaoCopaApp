@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { TOTAL_MATCHES } from '../data';
+import { useState, useEffect } from 'react';
+import { TOTAL_MATCHES, GROUP_ORDER } from '../data';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { TeamBadge } from '../components/ui/TeamBadge';
 import { PageTitle } from '../components/ui/PageTitle';
+import { matchService, adminService } from '../services/api';
 
 function AdminTile({ icon, value, label, tone }) {
   const c = tone === "gold" ? "text-gold" : tone === "amber" ? "text-gold-400" : tone === "red" ? "text-danger" : "text-grass-400";
@@ -24,19 +26,95 @@ function AdminTile({ icon, value, label, tone }) {
 export function Admin({ allUsers, togglePaid }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [activeGroup, setActiveGroup] = useState("A");
+  const [localScores, setLocalScores] = useState({});
+  const [savingMatch, setSavingMatch] = useState(null);
+
+  useEffect(() => {
+    matchService.getMatches().then(data => {
+      setMatches(data);
+      const init = {};
+      data.forEach(m => {
+        if (m.realHome != null && m.realAway != null) {
+          init[m.id] = { h: String(m.realHome), a: String(m.realAway) };
+        }
+      });
+      setLocalScores(init);
+    }).catch(() => {});
+  }, []);
 
   const total = allUsers?.length || 0;
   const paid = allUsers?.filter(u => u.isPaid).length || 0;
   const pending = total - paid;
 
-  const run = (key, label) => {
-    setBusy(key);
-    setTimeout(() => {
-      setBusy(null);
-      setToast(label);
-      setTimeout(() => setToast(null), 2600);
-    }, 1100);
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2600);
   };
+
+  const handleRefreshMatches = async () => {
+    setBusy("res");
+    try {
+      const data = await matchService.getMatches();
+      setMatches(data);
+      const init = {};
+      data.forEach(m => {
+        if (m.realHome != null && m.realAway != null) {
+          init[m.id] = { h: String(m.realHome), a: String(m.realAway) };
+        }
+      });
+      setLocalScores(init);
+      showToast("Jogos atualizados.");
+    } catch {
+      showToast("Erro ao atualizar jogos.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleCalculate = async () => {
+    setBusy("calc");
+    try {
+      await adminService.calculateScores();
+      showToast("Pontuações recalculadas para todos.");
+    } catch {
+      showToast("Erro ao recalcular pontuações.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveResult = async (matchId) => {
+    const s = localScores[matchId];
+    if (!s || s.h === "" || s.a === "") return;
+    setSavingMatch(matchId);
+    try {
+      await adminService.updateMatchResult(matchId, parseInt(s.h, 10), parseInt(s.a, 10));
+      setMatches(prev => prev.map(m =>
+        m.id === matchId
+          ? { ...m, status: "Locked", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10) }
+          : m
+      ));
+      showToast("Resultado salvo.");
+    } catch {
+      showToast("Erro ao salvar resultado.");
+    } finally {
+      setSavingMatch(null);
+    }
+  };
+
+  const setScore = (matchId, side, val) => {
+    setLocalScores(prev => ({ ...prev, [matchId]: { ...(prev[matchId] || {}), [side]: val } }));
+  };
+
+  const groupMatches = matches.filter(m => m.group === activeGroup);
+  const launchedCount = matches.filter(m => m.realHome != null).length;
+
+  const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
+  const inputCls = `w-10 h-9 text-center text-sm font-cond font-bold rounded-lg border outline-none transition
+    bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25`;
 
   return (
     <div>
@@ -53,15 +131,79 @@ export function Admin({ allUsers, togglePaid }) {
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3 mb-6">
-        <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy}
-          onClick={() => run("res", "Resultados reais atualizados.")}>
-          {busy === "res" ? "Atualizando..." : "Atualizar Resultados Reais"}
+        <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
+          {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
-        <Button variant="primary" size="lg" icon="calculator" disabled={!!busy}
-          onClick={() => run("calc", "Pontuações recalculadas para todos.")}>
+        <Button variant="primary" size="lg" icon="calculator" disabled={!!busy} onClick={handleCalculate}>
           {busy === "calc" ? "Calculando..." : "Calcular Pontuações"}
         </Button>
       </div>
+
+      <Card pad={false} className="overflow-hidden mb-6">
+        <div className="px-5 py-3.5 border-b border-edge flex items-center justify-between">
+          <h2 className="font-display text-lg text-cream">Lançar Resultados</h2>
+          <span className="font-cond text-mute2 text-sm">{launchedCount}/{matches.length} lançados</span>
+        </div>
+
+        <div className="px-5 py-3 border-b border-edge flex flex-wrap gap-1.5">
+          {GROUP_ORDER.map(g => {
+            const done = matches.filter(m => m.group === g).every(m => m.realHome != null);
+            return (
+              <button key={g} onClick={() => setActiveGroup(g)}
+                className={`relative w-9 h-9 rounded-xl font-cond font-bold text-sm border transition-all
+                  ${activeGroup === g
+                    ? "bg-grass text-bg border-grass"
+                    : "bg-surface2 text-mute border-edge hover:text-cream hover:border-edge2"}`}>
+                {g}
+                {done && activeGroup !== g && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-grass-400 border-2 border-bg" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="divide-y divide-edge/40">
+          {groupMatches.length === 0 && (
+            <div className="px-5 py-8 text-center text-mute2 font-cond text-sm">Nenhum jogo encontrado.</div>
+          )}
+          {groupMatches.map(m => {
+            const s = localScores[m.id] || { h: "", a: "" };
+            const hasResult = m.realHome != null && m.realAway != null;
+            const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
+            return (
+              <div key={m.id} className="px-5 py-3 flex items-center gap-3">
+                <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
+
+                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                  <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
+                  <TeamBadge name={m.homeTeam} showName={false} size="sm" />
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <input type="number" min="0" max="20" value={s.h}
+                    onChange={e => setScore(m.id, "h", e.target.value)}
+                    placeholder="–" className={inputCls} />
+                  <span className="text-mute2 font-cond text-sm">×</span>
+                  <input type="number" min="0" max="20" value={s.a}
+                    onChange={e => setScore(m.id, "a", e.target.value)}
+                    placeholder="–" className={inputCls} />
+                </div>
+
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <TeamBadge name={m.awayTeam} showName={false} size="sm" />
+                  <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
+                </div>
+
+                <Button size="sm" variant={hasResult ? "secondary" : "primary"}
+                  disabled={!canSave} onClick={() => saveResult(m.id)}>
+                  {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       <Card pad={false} className="overflow-hidden">
         <div className="px-5 py-3.5 border-b border-edge flex items-center justify-between">
