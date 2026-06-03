@@ -147,7 +147,8 @@ export function Admin({ allUsers, togglePaid }) {
 
         <div className="px-5 py-3 border-b border-edge flex flex-wrap gap-1.5">
           {GROUP_ORDER.map(g => {
-            const done = matches.filter(m => m.group === g).every(m => m.realHome != null);
+            const groupMs = matches.filter(m => m.group === g);
+            const done = groupMs.length > 0 && groupMs.every(m => m.realHome != null);
             return (
               <button key={g} onClick={() => setActiveGroup(g)}
                 className={`relative w-9 h-9 rounded-xl font-cond font-bold text-sm border transition-all
