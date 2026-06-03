@@ -237,13 +237,13 @@ export function Admin({ allUsers, togglePaid }) {
               const hasResult = m.realHome != null && m.realAway != null;
               const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
               return (
-                <div key={m.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
-                  <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                <div key={m.id} className="px-3 sm:px-5 py-3 flex items-center gap-2 sm:gap-3">
+                  <span className="font-cond text-mute2 text-xs w-9 shrink-0">{fmtDate(m.matchDate)}</span>
+                  <div className="shrink-0 sm:flex-1 flex items-center justify-end gap-2">
                     <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
                     <TeamBadge name={m.homeTeam} showName={false} size="sm" />
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     <input type="number" min="0" max="20" value={s.h ?? ""}
                       onChange={e => setScore(m.id, "h", e.target.value)}
                       placeholder="–" className={inputCls} />
@@ -252,7 +252,7 @@ export function Admin({ allUsers, togglePaid }) {
                       onChange={e => setScore(m.id, "a", e.target.value)}
                       placeholder="–" className={inputCls} />
                   </div>
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <div className="shrink-0 sm:flex-1 flex items-center gap-2">
                     <TeamBadge name={m.awayTeam} showName={false} size="sm" />
                     <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                   </div>
