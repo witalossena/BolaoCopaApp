@@ -23,6 +23,105 @@ function AdminTile({ icon, value, label, tone }) {
   );
 }
 
+function UserPredictionsModal({ user, matches, onClose }) {
+  const [predictions, setPredictions] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    adminService.getUserPredictions(user.id)
+      .then(data => { setPredictions(data); setLoading(false); })
+      .catch(() => { setError("Erro ao carregar apostas."); setLoading(false); });
+  }, [user.id]);
+
+  const matchMap = Object.fromEntries(matches.map(m => [m.externalId, m]));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-bg/80 backdrop-blur-sm" />
+      <div className="relative bg-surface border border-edge rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-card"
+        onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-surface border-b border-edge px-5 py-4 flex items-center justify-between rounded-t-2xl">
+          <div>
+            <div className="font-display text-lg text-cream">{user.name}</div>
+            <div className="text-mute2 text-xs font-cond">{user.handle}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl border border-edge bg-surface2 grid place-items-center text-mute hover:text-cream transition">
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {loading && <div className="text-center text-mute2 font-cond py-8">Carregando apostas...</div>}
+          {error && <div className="text-center text-danger font-cond py-8">{error}</div>}
+
+          {predictions && (<>
+            {predictions.matchPredictions?.length > 0 && (
+              <div>
+                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Apostas de Partidas</div>
+                <div className="space-y-1.5">
+                  {predictions.matchPredictions.map(p => {
+                    const m = matchMap[p.externalId];
+                    return (
+                      <div key={p.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
+                          <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
+                        </div>
+                        <span className="font-display text-cream text-sm mx-3 shrink-0">{p.homeScore} × {p.awayScore}</span>
+                        <div className="flex items-center gap-2 min-w-0 justify-end">
+                          <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
+                          {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {predictions.groupRanks?.length > 0 && (
+              <div>
+                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
+                <div className="space-y-1.5">
+                  {predictions.groupRanks.map(g => (
+                    <div key={g.group} className="flex items-center gap-3 bg-surface2 rounded-xl px-4 py-2.5">
+                      <span className="font-display text-cream w-5 shrink-0">{g.group}</span>
+                      <div className="flex-1 font-cond text-sm text-cream truncate">1º {g.firstTeam}</div>
+                      <div className="flex-1 font-cond text-sm text-mute2 truncate text-right">2º {g.secondTeam}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {predictions.knockoutPredictions?.length > 0 && (
+              <div>
+                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Mata-Mata</div>
+                <div className="space-y-1.5">
+                  {predictions.knockoutPredictions.map(k => {
+                    const m = matchMap[k.externalId];
+                    return (
+                      <div key={k.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
+                        <span className="font-cond text-sm text-mute2 truncate">{m ? `${m.homeTeam} vs ${m.awayTeam}` : k.externalId}</span>
+                        <span className="font-cond font-bold text-grass-400 text-sm ml-3 shrink-0">{k.winnerTeam}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!predictions.matchPredictions?.length && !predictions.groupRanks?.length && !predictions.knockoutPredictions?.length && (
+              <div className="text-center text-mute2 font-cond py-8">Nenhuma aposta registrada.</div>
+            )}
+          </>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Admin({ allUsers, togglePaid }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -34,6 +133,7 @@ export function Admin({ allUsers, togglePaid }) {
   const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "matamata"
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
 
   useEffect(() => {
     matchService.getMatches().then(data => {
@@ -348,16 +448,16 @@ export function Admin({ allUsers, togglePaid }) {
           <h2 className="font-display text-lg text-cream">Participantes</h2>
           <span className="font-cond text-mute2 text-sm">{total} no total</span>
         </div>
-        <div className="grid grid-cols-[1fr_48px_32px_72px] sm:grid-cols-[1fr_100px_130px_100px] gap-x-3 px-5 py-2.5 border-b border-edge bg-surface2/40">
-          {["Participante", "Total", "Status", "Ação"].map((h, i) => (
-            <span key={h} className={`font-cond font-semibold text-mute2 text-xs tracking-widest uppercase ${i === 1 ? "text-right" : ""}`}>
+        <div className="grid grid-cols-[1fr_48px_32px_72px_36px] sm:grid-cols-[1fr_100px_130px_100px_80px] gap-x-3 px-5 py-2.5 border-b border-edge bg-surface2/40">
+          {["Participante", "Total", "Status", "Ação", ""].map((h, i) => (
+            <span key={i} className={`font-cond font-semibold text-mute2 text-xs tracking-widest uppercase ${i === 1 ? "text-right" : ""}`}>
               {h}
             </span>
           ))}
         </div>
         {allUsers?.map(u => (
           <div key={u.id || u.handle}
-            className="grid grid-cols-[1fr_48px_32px_72px] sm:grid-cols-[1fr_100px_130px_100px] gap-x-3 items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
+            className="grid grid-cols-[1fr_48px_32px_72px_36px] sm:grid-cols-[1fr_100px_130px_100px_80px] gap-x-3 items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 shrink-0 rounded-full bg-surface2 border border-edge grid place-items-center font-display text-xs text-cream">
                 {u.name?.[0] || "?"}
@@ -384,9 +484,21 @@ export function Admin({ allUsers, togglePaid }) {
               className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left">
               {u.isPaid ? "Marcar pend." : "Marcar pago"}
             </button>
+            <button onClick={() => setViewingUser(u)} title="Ver apostas"
+              className="w-8 h-8 rounded-lg border border-edge bg-surface2 grid place-items-center text-mute hover:text-cream hover:border-edge2 transition shrink-0">
+              <Icon name="eye" size={14} />
+            </button>
           </div>
         ))}
       </Card>
+
+      {viewingUser && (
+        <UserPredictionsModal
+          user={viewingUser}
+          matches={matches}
+          onClose={() => setViewingUser(null)}
+        />
+      )}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface border border-grass/40 text-cream rounded-full px-5 py-3 shadow-card flex items-center gap-2.5 pop">

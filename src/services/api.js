@@ -113,6 +113,10 @@ export const adminService = {
   updateMatchTeams: async (matchId, homeTeam, awayTeam) => {
     const response = await api.patch(`/admin/matches/${matchId}/teams`, { homeTeam, awayTeam });
     return response.data;
+  },
+  getUserPredictions: async (userId) => {
+    const response = await api.get(`/admin/users/${userId}/predictions`);
+    return response.data;
   }
 };
 
