@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0f1e14"/>
+  <circle cx="256" cy="256" r="200" fill="#1a3323"/>
+  <!-- Trophy cup -->
+  <path d="M176 140 h160 v80 c0 66-44 110-80 122 v28 h40 v28 H216 v-28 h40 v-28 c-36-12-80-56-80-122 z"
+        fill="#34c75e"/>
+  <!-- Trophy handles -->
+  <path d="M176 160 h-36 c0 0-4 60 36 80" fill="none" stroke="#34c75e" stroke-width="18" stroke-linecap="round"/>
+  <path d="M336 160 h36 c0 0 4 60-36 80" fill="none" stroke="#34c75e" stroke-width="18" stroke-linecap="round"/>
+</svg>
