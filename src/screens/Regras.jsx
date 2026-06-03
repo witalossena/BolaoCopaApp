@@ -22,6 +22,18 @@ export function Regras() {
       </p>
 
       <div className="grid lg:grid-cols-2 gap-5">
+        <Card accent className="lg:col-span-2">
+          <SectionLabel icon="ball">Placares dos jogos</SectionLabel>
+          <div className="grid sm:grid-cols-3 sm:gap-x-8">
+            {SCORING.matches.map((r, i) => (
+              <RuleRow key={i} label={r.label} pts={r.pts} tone="green" last />
+            ))}
+          </div>
+          <p className="text-xs text-mute2 mt-3 leading-relaxed">
+            Para cada jogo da fase de grupos, você aposta o placar exato. Cravar os dois gols vale 15 pts; acertar o resultado com o mesmo saldo de gols vale 10 pts; acertar só quem ganhou (ou empate) vale 5 pts.
+          </p>
+        </Card>
+
         <Card accent>
           <SectionLabel icon="users">Fase de grupos</SectionLabel>
           {SCORING.groups.map((r, i) => (
