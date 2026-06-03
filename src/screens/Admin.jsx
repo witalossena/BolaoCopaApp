@@ -233,7 +233,7 @@ export function Admin({ allUsers, togglePaid }) {
               <div className="px-5 py-8 text-center text-mute2 font-cond text-sm">Nenhum jogo encontrado.</div>
             )}
             {groupMatches.map(m => {
-              const s = localScores[m.id] || { h: "", a: "" };
+              const s = { h: localScores[m.id]?.h ?? "", a: localScores[m.id]?.a ?? "" };
               const hasResult = m.realHome != null && m.realAway != null;
               const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
               return (
@@ -244,11 +244,11 @@ export function Admin({ allUsers, togglePaid }) {
                     <TeamBadge name={m.homeTeam} showName={false} size="sm" />
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <input type="number" min="0" max="20" value={s.h}
+                    <input type="number" min="0" max="20" value={s.h ?? ""}
                       onChange={e => setScore(m.id, "h", e.target.value)}
                       placeholder="–" className={inputCls} />
                     <span className="text-mute2 font-cond text-sm">×</span>
-                    <input type="number" min="0" max="20" value={s.a}
+                    <input type="number" min="0" max="20" value={s.a ?? ""}
                       onChange={e => setScore(m.id, "a", e.target.value)}
                       placeholder="–" className={inputCls} />
                   </div>
@@ -265,7 +265,7 @@ export function Admin({ allUsers, togglePaid }) {
                     <Icon name="lock" size={13} />
                   </button>
                   <Button size="sm" variant={hasResult ? "secondary" : "primary"}
-                    disabled={!canSave} onClick={() => saveResult(m.id)}>
+                    className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
                     {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
                   </Button>
                 </div>
@@ -285,7 +285,7 @@ export function Admin({ allUsers, togglePaid }) {
                     {label}
                   </div>
                   {rms.map(m => {
-                    const s = localScores[m.id] || { h: "", a: "" };
+                    const s = { h: localScores[m.id]?.h ?? "", a: localScores[m.id]?.a ?? "" };
                     const t = { h: localTeams[m.id]?.h ?? m.homeTeam ?? "", a: localTeams[m.id]?.a ?? m.awayTeam ?? "" };
                     const hasResult = m.realHome != null && m.realAway != null;
                     const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
@@ -306,11 +306,11 @@ export function Admin({ allUsers, togglePaid }) {
                           </Button>
                         </div>
                         <div className="flex items-center gap-2 pl-14">
-                          <input type="number" min="0" max="20" value={s.h}
+                          <input type="number" min="0" max="20" value={s.h ?? ""}
                             onChange={e => setScore(m.id, "h", e.target.value)}
                             placeholder="–" className={inputCls} />
                           <span className="text-mute2 font-cond text-sm">×</span>
-                          <input type="number" min="0" max="20" value={s.a}
+                          <input type="number" min="0" max="20" value={s.a ?? ""}
                             onChange={e => setScore(m.id, "a", e.target.value)}
                             placeholder="–" className={inputCls} />
                           <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
@@ -322,7 +322,7 @@ export function Admin({ allUsers, togglePaid }) {
                             <Icon name="lock" size={13} />
                           </button>
                           <Button size="sm" variant={hasResult ? "secondary" : "primary"}
-                            disabled={!canSave} onClick={() => saveResult(m.id)}>
+                            className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
                             {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
                           </Button>
                         </div>
