@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { GROUPS, GROUP_ORDER, TOTAL_MATCHES, LOCKED_MATCHES } from '../data';
+import { predictionService } from '../services/api';
 import { Icon } from '../components/Icon';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { Card } from '../components/ui/Card';
@@ -10,11 +11,22 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { Select } from '../components/ui/Select';
 import { TEAMS } from '../data';
 
-function MatchRow({ match, score, onScore, matchStatuses = {} }) {
+function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }) {
   const apiStatus = matchStatuses[match.id];
   const effectiveStatus = apiStatus || match.status;
   const locked = effectiveStatus === "locked";
   const soon = !locked && effectiveStatus === "soon";
+  const homeRef = useRef();
+  const awayRef = useRef();
+
+  const submitIfComplete = () => {
+    const matchGuid = matchIdMap[match.id];
+    const h = homeRef.current?.value;
+    const a = awayRef.current?.value;
+    if (!matchGuid || h === "" || h == null || a === "" || a == null) return;
+    predictionService.submitMatchPrediction(matchGuid, parseInt(h, 10), parseInt(a, 10))
+      .catch(console.error);
+  };
 
   const inputCls = `w-12 h-11 text-center text-lg font-cond font-bold rounded-lg border outline-none transition
     ${locked
@@ -34,12 +46,12 @@ function MatchRow({ match, score, onScore, matchStatuses = {} }) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <input type="number" min="0" max="20" disabled={locked}
-          value={score?.h ?? ""} onChange={e => onScore("h", e.target.value)}
+        <input ref={homeRef} type="number" min="0" max="20" disabled={locked}
+          value={score?.h ?? ""} onChange={e => onScore("h", e.target.value)} onBlur={submitIfComplete}
           placeholder={locked ? "–" : "0"} className={inputCls} />
         <span className="text-mute2 font-cond text-sm">×</span>
-        <input type="number" min="0" max="20" disabled={locked}
-          value={score?.a ?? ""} onChange={e => onScore("a", e.target.value)}
+        <input ref={awayRef} type="number" min="0" max="20" disabled={locked}
+          value={score?.a ?? ""} onChange={e => onScore("a", e.target.value)} onBlur={submitIfComplete}
           placeholder={locked ? "–" : "0"} className={inputCls} />
       </div>
 
@@ -63,6 +75,15 @@ function GroupRanks({ group, ranks, setRank }) {
     .filter(t => t !== exclude)
     .map(t => <option key={t} value={t}>{TEAMS[t]} · {t}</option>);
 
+  const handleChange = (key, val) => {
+    setRank(group.id, key, val);
+    const first = key === 'first' ? val : r.first;
+    const second = key === 'second' ? val : r.second;
+    if (first && second) {
+      predictionService.submitGroupRankPrediction(group.id, first, second).catch(console.error);
+    }
+  };
+
   return (
     <div className="mt-4 pt-4 border-t border-edge/60 grid sm:grid-cols-2 gap-3">
       {[["first", "1º lugar", "gold"], ["second", "2º lugar", "green"]].map(([key, label, tone]) => (
@@ -77,7 +98,7 @@ function GroupRanks({ group, ranks, setRank }) {
             <PointPill pts={10} tone={tone} />
           </div>
           <Select value={r[key] || ""} placeholder="Quem se classifica?"
-            onChange={e => setRank(group.id, key, e.target.value)}>
+            onChange={e => handleChange(key, e.target.value)}>
             {opts(key === "first" ? r.second : r.first)}
           </Select>
         </div>
@@ -86,7 +107,7 @@ function GroupRanks({ group, ranks, setRank }) {
   );
 }
 
-export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {} }) {
+export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {}, matchIdMap = {} }) {
   const [active, setActive] = useState("A");
   const group = GROUPS.find(g => g.id === active);
   const idx = GROUP_ORDER.indexOf(active);
@@ -165,7 +186,7 @@ export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {} 
         <div className="divide-y divide-edge/40 mt-2">
           {group.matches.map(m => (
             <MatchRow key={m.id} match={m} score={scores[m.id]}
-              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} />
+              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />
           ))}
         </div>
 

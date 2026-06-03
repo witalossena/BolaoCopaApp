@@ -9,7 +9,7 @@ import { MataMata } from './screens/MataMata';
 import { Ranking } from './screens/Ranking';
 import { Desempenho } from './screens/Desempenho';
 import { Admin } from './screens/Admin';
-import { rankingService, authService, adminService, matchService } from './services/api';
+import { rankingService, authService, adminService, matchService, predictionService } from './services/api';
 
 const STORE_KEY = "bolao2026_v1";
 
@@ -36,6 +36,7 @@ export default function App() {
   const [adminUsers, setAdminUsers] = useState(saved.adminUsers || null);
   const [realRanking, setRealRanking] = useState([]);
   const [matchStatuses, setMatchStatuses] = useState({});
+  const [matchIdMap, setMatchIdMap] = useState({});
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers }));
@@ -57,10 +58,41 @@ export default function App() {
     if (!user) return;
     matchService.getMatches().then(data => {
       const statuses = {};
-      data.forEach(m => { if (m.externalId) statuses[m.externalId] = m.status.toLowerCase(); });
+      const idMap = {};
+      data.forEach(m => {
+        if (m.externalId) {
+          statuses[m.externalId] = m.status.toLowerCase();
+          idMap[m.externalId] = m.id;
+        }
+      });
       setMatchStatuses(statuses);
+      setMatchIdMap(idMap);
     }).catch(() => {});
   }, [view]);
+
+  useEffect(() => {
+    if (!user) return;
+    predictionService.getUserPredictions().then(data => {
+      if (data.matchPredictions?.length > 0) {
+        setScores(prev => {
+          const merged = { ...prev };
+          data.matchPredictions.forEach(p => {
+            merged[p.externalId] = { h: String(p.homeScore), a: String(p.awayScore) };
+          });
+          return merged;
+        });
+      }
+      if (data.groupRanks?.length > 0) {
+        setRanks(prev => {
+          const merged = { ...prev };
+          data.groupRanks.forEach(g => {
+            merged[g.group] = { first: g.firstTeam, second: g.secondTeam };
+          });
+          return merged;
+        });
+      }
+    }).catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     if (view === "admin") {
@@ -151,7 +183,7 @@ export default function App() {
 
   let screen = null;
   switch (view) {
-    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} />; break;
+    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
