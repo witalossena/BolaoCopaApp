@@ -236,38 +236,50 @@ export function Admin({ allUsers, togglePaid }) {
               const s = { h: localScores[m.id]?.h ?? "", a: localScores[m.id]?.a ?? "" };
               const hasResult = m.realHome != null && m.realAway != null;
               const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
+              const lockBtn = (
+                <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
+                  title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
+                  className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                    ${m.status === "Locked"
+                      ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                      : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
+                  <Icon name="lock" size={13} />
+                </button>
+              );
+              const saveBtn = (
+                <Button size="sm" variant={hasResult ? "secondary" : "primary"}
+                  className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
+                  {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
+                </Button>
+              );
               return (
-                <div key={m.id} className="px-3 sm:px-5 py-3 flex items-center gap-2 sm:gap-3">
-                  <span className="font-cond text-mute2 text-xs w-9 shrink-0">{fmtDate(m.matchDate)}</span>
-                  <div className="shrink-0 sm:flex-1 flex items-center justify-end gap-2">
-                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
-                    <TeamBadge name={m.homeTeam} showName={false} size="sm" />
+                <div key={m.id} className="px-3 sm:px-5 py-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="font-cond text-mute2 text-xs w-9 shrink-0">{fmtDate(m.matchDate)}</span>
+                    <div className="shrink-0 sm:flex-1 flex items-center justify-end gap-2">
+                      <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
+                      <TeamBadge name={m.homeTeam} showName={false} size="sm" />
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <input type="number" min="0" max="20" value={s.h ?? ""}
+                        onChange={e => setScore(m.id, "h", e.target.value)}
+                        placeholder="–" className={inputCls} />
+                      <span className="text-mute2 font-cond text-sm">×</span>
+                      <input type="number" min="0" max="20" value={s.a ?? ""}
+                        onChange={e => setScore(m.id, "a", e.target.value)}
+                        placeholder="–" className={inputCls} />
+                    </div>
+                    <div className="shrink-0 sm:flex-1 flex items-center gap-2">
+                      <TeamBadge name={m.awayTeam} showName={false} size="sm" />
+                      <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                      {lockBtn}{saveBtn}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <input type="number" min="0" max="20" value={s.h ?? ""}
-                      onChange={e => setScore(m.id, "h", e.target.value)}
-                      placeholder="–" className={inputCls} />
-                    <span className="text-mute2 font-cond text-sm">×</span>
-                    <input type="number" min="0" max="20" value={s.a ?? ""}
-                      onChange={e => setScore(m.id, "a", e.target.value)}
-                      placeholder="–" className={inputCls} />
+                  <div className="flex sm:hidden items-center justify-end gap-2 mt-2">
+                    {lockBtn}{saveBtn}
                   </div>
-                  <div className="shrink-0 sm:flex-1 flex items-center gap-2">
-                    <TeamBadge name={m.awayTeam} showName={false} size="sm" />
-                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
-                  </div>
-                  <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
-                    title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
-                    className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
-                      ${m.status === "Locked"
-                        ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
-                        : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
-                    <Icon name="lock" size={13} />
-                  </button>
-                  <Button size="sm" variant={hasResult ? "secondary" : "primary"}
-                    className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
-                    {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
-                  </Button>
                 </div>
               );
             })}
