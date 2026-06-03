@@ -31,17 +31,25 @@ export function Admin({ allUsers, togglePaid }) {
   const [localScores, setLocalScores] = useState({});
   const [savingMatch, setSavingMatch] = useState(null);
   const [lockingMatch, setLockingMatch] = useState(null);
+  const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "matamata"
+  const [localTeams, setLocalTeams] = useState({});
+  const [savingTeams, setSavingTeams] = useState(null);
 
   useEffect(() => {
     matchService.getMatches().then(data => {
       setMatches(data);
-      const init = {};
+      const initScores = {};
+      const initTeams = {};
       data.forEach(m => {
         if (m.realHome != null && m.realAway != null) {
-          init[m.id] = { h: String(m.realHome), a: String(m.realAway) };
+          initScores[m.id] = { h: String(m.realHome), a: String(m.realAway) };
+        }
+        if (m.round !== "Group") {
+          initTeams[m.id] = { h: m.homeTeam, a: m.awayTeam };
         }
       });
-      setLocalScores(init);
+      setLocalScores(initScores);
+      setLocalTeams(initTeams);
     }).catch(() => {});
   }, []);
 
@@ -59,7 +67,7 @@ export function Admin({ allUsers, togglePaid }) {
     try {
       const data = await matchService.getMatches();
       setMatches(data);
-      const init = {};
+        const init = {};
       data.forEach(m => {
         if (m.realHome != null && m.realAway != null) {
           init[m.id] = { h: String(m.realHome), a: String(m.realAway) };
@@ -125,7 +133,34 @@ export function Admin({ allUsers, togglePaid }) {
     setLocalScores(prev => ({ ...prev, [matchId]: { ...(prev[matchId] || {}), [side]: val } }));
   };
 
+  const setTeam = (matchId, side, val) => {
+    setLocalTeams(prev => ({ ...prev, [matchId]: { ...(prev[matchId] || {}), [side]: val } }));
+  };
+
+  const saveTeams = async (matchId) => {
+    const t = localTeams[matchId];
+    if (!t || !t.h || !t.a) return;
+    setSavingTeams(matchId);
+    try {
+      await adminService.updateMatchTeams(matchId, t.h, t.a);
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, homeTeam: t.h, awayTeam: t.a } : m));
+      showToast("Times atualizados.");
+    } catch {
+      showToast("Erro ao salvar times.");
+    } finally {
+      setSavingTeams(null);
+    }
+  };
+
   const groupMatches = matches.filter(m => m.group === activeGroup);
+  const knockoutMatches = matches.filter(m => m.round !== "Group");
+  const KO_ROUNDS = [
+    { key: "RoundOf16",    label: "Oitavas" },
+    { key: "QuarterFinal", label: "Quartas" },
+    { key: "SemiFinal",    label: "Semifinal" },
+    { key: "ThirdPlace",   label: "3º Lugar" },
+    { key: "Final",        label: "Final" },
+  ];
   const launchedCount = matches.filter(m => m.realHome != null).length;
 
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -162,73 +197,143 @@ export function Admin({ allUsers, togglePaid }) {
           <span className="font-cond text-mute2 text-sm">{launchedCount}/{matches.length} lançados</span>
         </div>
 
-        <div className="px-5 py-3 border-b border-edge flex flex-wrap gap-1.5">
-          {GROUP_ORDER.map(g => {
-            const groupMs = matches.filter(m => m.group === g);
-            const done = groupMs.length > 0 && groupMs.every(m => m.realHome != null);
-            return (
-              <button key={g} onClick={() => setActiveGroup(g)}
-                className={`relative w-9 h-9 rounded-xl font-cond font-bold text-sm border transition-all
-                  ${activeGroup === g
-                    ? "bg-grass text-bg border-grass"
-                    : "bg-surface2 text-mute border-edge hover:text-cream hover:border-edge2"}`}>
-                {g}
-                {done && activeGroup !== g && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-grass-400 border-2 border-bg" />
-                )}
-              </button>
-            );
-          })}
+        <div className="px-5 py-3 border-b border-edge flex gap-2">
+          {["grupos", "matamata"].map(tab => (
+            <button key={tab} onClick={() => setResultTab(tab)}
+              className={`px-4 h-8 rounded-xl font-cond font-bold text-sm border transition-all
+                ${resultTab === tab
+                  ? "bg-grass text-bg border-grass"
+                  : "bg-surface2 text-mute border-edge hover:text-cream hover:border-edge2"}`}>
+              {tab === "grupos" ? "Fase de Grupos" : "Mata-Mata"}
+            </button>
+          ))}
         </div>
 
-        <div className="divide-y divide-edge/40">
-          {groupMatches.length === 0 && (
-            <div className="px-5 py-8 text-center text-mute2 font-cond text-sm">Nenhum jogo encontrado.</div>
-          )}
-          {groupMatches.map(m => {
-            const s = localScores[m.id] || { h: "", a: "" };
-            const hasResult = m.realHome != null && m.realAway != null;
-            const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
-            return (
-              <div key={m.id} className="px-5 py-3 flex items-center gap-3">
-                <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
-
-                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                  <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
-                  <TeamBadge name={m.homeTeam} showName={false} size="sm" />
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <input type="number" min="0" max="20" value={s.h}
-                    onChange={e => setScore(m.id, "h", e.target.value)}
-                    placeholder="–" className={inputCls} />
-                  <span className="text-mute2 font-cond text-sm">×</span>
-                  <input type="number" min="0" max="20" value={s.a}
-                    onChange={e => setScore(m.id, "a", e.target.value)}
-                    placeholder="–" className={inputCls} />
-                </div>
-
-                <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <TeamBadge name={m.awayTeam} showName={false} size="sm" />
-                  <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
-                </div>
-
-                <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
-                  title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
-                  className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
-                    ${m.status === "Locked"
-                      ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
-                      : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
-                  <Icon name="lock" size={13} />
+        {resultTab === "grupos" && (<>
+          <div className="px-5 py-3 border-b border-edge flex flex-wrap gap-1.5">
+            {GROUP_ORDER.map(g => {
+              const groupMs = matches.filter(m => m.group === g);
+              const done = groupMs.length > 0 && groupMs.every(m => m.realHome != null);
+              return (
+                <button key={g} onClick={() => setActiveGroup(g)}
+                  className={`relative w-9 h-9 rounded-xl font-cond font-bold text-sm border transition-all
+                    ${activeGroup === g
+                      ? "bg-grass text-bg border-grass"
+                      : "bg-surface2 text-mute border-edge hover:text-cream hover:border-edge2"}`}>
+                  {g}
+                  {done && activeGroup !== g && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-grass-400 border-2 border-bg" />
+                  )}
                 </button>
-                <Button size="sm" variant={hasResult ? "secondary" : "primary"}
-                  disabled={!canSave} onClick={() => saveResult(m.id)}>
-                  {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          <div className="divide-y divide-edge/40">
+            {groupMatches.length === 0 && (
+              <div className="px-5 py-8 text-center text-mute2 font-cond text-sm">Nenhum jogo encontrado.</div>
+            )}
+            {groupMatches.map(m => {
+              const s = localScores[m.id] || { h: "", a: "" };
+              const hasResult = m.realHome != null && m.realAway != null;
+              const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
+              return (
+                <div key={m.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
+                  <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.homeTeam}</span>
+                    <TeamBadge name={m.homeTeam} showName={false} size="sm" />
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input type="number" min="0" max="20" value={s.h}
+                      onChange={e => setScore(m.id, "h", e.target.value)}
+                      placeholder="–" className={inputCls} />
+                    <span className="text-mute2 font-cond text-sm">×</span>
+                    <input type="number" min="0" max="20" value={s.a}
+                      onChange={e => setScore(m.id, "a", e.target.value)}
+                      placeholder="–" className={inputCls} />
+                  </div>
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <TeamBadge name={m.awayTeam} showName={false} size="sm" />
+                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
+                  </div>
+                  <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
+                    title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
+                    className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                      ${m.status === "Locked"
+                        ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                        : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
+                    <Icon name="lock" size={13} />
+                  </button>
+                  <Button size="sm" variant={hasResult ? "secondary" : "primary"}
+                    disabled={!canSave} onClick={() => saveResult(m.id)}>
+                    {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </>)}
+
+        {resultTab === "matamata" && (
+          <div className="divide-y divide-edge/30">
+            {KO_ROUNDS.map(({ key, label }) => {
+              const rms = knockoutMatches.filter(m => m.round === key);
+              if (rms.length === 0) return null;
+              return (
+                <div key={key}>
+                  <div className="px-5 py-2 bg-surface2/40 font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase">
+                    {label}
+                  </div>
+                  {rms.map(m => {
+                    const s = localScores[m.id] || { h: "", a: "" };
+                    const t = localTeams[m.id] || { h: m.homeTeam, a: m.awayTeam };
+                    const hasResult = m.realHome != null && m.realAway != null;
+                    const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
+                    const canSaveTeams = t.h && t.a && savingTeams !== m.id;
+                    return (
+                      <div key={m.id} className="px-5 py-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
+                          <input value={t.h} onChange={e => setTeam(m.id, "h", e.target.value)}
+                            placeholder="Time da casa"
+                            className="flex-1 h-8 px-2 text-sm font-cond rounded-lg border bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25 outline-none" />
+                          <span className="text-mute2 font-cond text-sm shrink-0">vs</span>
+                          <input value={t.a} onChange={e => setTeam(m.id, "a", e.target.value)}
+                            placeholder="Time visitante"
+                            className="flex-1 h-8 px-2 text-sm font-cond rounded-lg border bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25 outline-none" />
+                          <Button size="sm" variant="secondary" disabled={!canSaveTeams} onClick={() => saveTeams(m.id)}>
+                            {savingTeams === m.id ? "..." : "Times"}
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2 pl-14">
+                          <input type="number" min="0" max="20" value={s.h}
+                            onChange={e => setScore(m.id, "h", e.target.value)}
+                            placeholder="–" className={inputCls} />
+                          <span className="text-mute2 font-cond text-sm">×</span>
+                          <input type="number" min="0" max="20" value={s.a}
+                            onChange={e => setScore(m.id, "a", e.target.value)}
+                            placeholder="–" className={inputCls} />
+                          <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
+                            title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
+                            className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                              ${m.status === "Locked"
+                                ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                                : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
+                            <Icon name="lock" size={13} />
+                          </button>
+                          <Button size="sm" variant={hasResult ? "secondary" : "primary"}
+                            disabled={!canSave} onClick={() => saveResult(m.id)}>
+                            {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       <Card pad={false} className="overflow-hidden">

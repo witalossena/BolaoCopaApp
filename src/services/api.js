@@ -105,6 +105,10 @@ export const adminService = {
       headers: { 'Content-Type': 'application/json' }
     });
     return response.data;
+  },
+  updateMatchTeams: async (matchId, homeTeam, awayTeam) => {
+    const response = await api.patch(`/admin/matches/${matchId}/teams`, { homeTeam, awayTeam });
+    return response.data;
   }
 };
 
