@@ -40,12 +40,12 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
         <div className="font-cond text-mute2 text-[10px] tracking-widest">{match.dateLabel.split(" ")[1]}</div>
       </div>
 
-      <div className="flex-1 flex items-center justify-end min-w-0 gap-2">
+      <div className="shrink-0 sm:flex-1 flex items-center justify-end gap-2">
         <span className="font-cond font-semibold text-cream text-sm truncate text-right hidden sm:block">{match.home}</span>
         <TeamBadge name={match.home} showName={false} />
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <input ref={homeRef} type="number" min="0" max="20" disabled={locked}
           value={score?.h ?? ""} onChange={e => onScore("h", e.target.value)} onBlur={submitIfComplete}
           placeholder={locked ? "–" : "0"} className={inputCls} />
@@ -55,15 +55,25 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
           placeholder={locked ? "–" : "0"} className={inputCls} />
       </div>
 
-      <div className="flex-1 flex items-center min-w-0 gap-2">
+      <div className="shrink-0 sm:flex-1 flex items-center gap-2">
         <TeamBadge name={match.away} showName={false} />
         <span className="font-cond font-semibold text-cream text-sm truncate hidden sm:block">{match.away}</span>
       </div>
 
-      <div className="shrink-0 flex justify-end sm:w-24">
-        {locked && <Badge tone="locked" icon="lock">Encerrada</Badge>}
-        {soon && <Badge tone="amber" icon="clock">{match.statusLabel}</Badge>}
-        {match.status === "open" && <span className="text-mute2"><Icon name="chevronRight" size={16} /></span>}
+      <div className="shrink-0 flex justify-end w-6 sm:w-28">
+        {locked && (
+          <>
+            <span className="sm:hidden text-mute2"><Icon name="lock" size={14} /></span>
+            <span className="hidden sm:block"><Badge tone="locked" icon="lock">Encerrada</Badge></span>
+          </>
+        )}
+        {soon && (
+          <>
+            <span className="sm:hidden text-gold"><Icon name="clock" size={14} /></span>
+            <span className="hidden sm:block"><Badge tone="amber" icon="clock">{match.statusLabel}</Badge></span>
+          </>
+        )}
+        {!locked && !soon && <span className="text-mute2"><Icon name="chevronRight" size={16} /></span>}
       </div>
     </div>
   );
