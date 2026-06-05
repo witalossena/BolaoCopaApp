@@ -126,7 +126,7 @@ export default function App() {
     if (champion) setSpecials(s => ({ ...s, campeao: champion }));
     if (sf0Winner && sf1Winner) {
       const vice = champion === sf0Winner ? sf1Winner : sf0Winner;
-      setSpecials(s => ({ ...s, vice, finalista: vice }));
+      setSpecials(s => ({ ...s, vice }));
     }
   }, [koWinners["4-0"], koWinners["3-0"], koWinners["3-1"]]);
 
