@@ -6,13 +6,28 @@ import { SectionLabel } from '../components/ui/SectionLabel';
 import { PointPill } from '../components/ui/PointPill';
 import { Select } from '../components/ui/Select';
 
+// Derive teams that are candidates for 3rd place from the bracket
+function getThirdCandidates(koWinners) {
+  const sf0Teams = [koWinners["2-0"], koWinners["2-1"]].filter(Boolean);
+  const sf1Teams = [koWinners["2-2"], koWinners["2-3"]].filter(Boolean);
+  const sf0Loser = sf0Teams.length === 2 && koWinners["3-0"]
+    ? sf0Teams.find(t => t !== koWinners["3-0"]) : null;
+  const sf1Loser = sf1Teams.length === 2 && koWinners["3-1"]
+    ? sf1Teams.find(t => t !== koWinners["3-1"]) : null;
+  return [sf0Loser, sf1Loser].filter(Boolean);
+}
+
+// Keys that are auto-filled from the bracket
+const BRACKET_KEYS = new Set(["campeao", "vice", "finalista"]);
+
 const STAR_PLAYERS = [
   "Kylian Mbappé","Vinícius Júnior","Erling Haaland","Jude Bellingham","Lionel Messi",
   "Lamine Yamal","Harry Kane","Rodrygo","Pedri","Florian Wirtz","Bukayo Saka",
   "Phil Foden","Rafael Leão","Julián Álvarez","Federico Valverde","Cristiano Ronaldo",
 ];
 
-function SpecialCard({ field, value, onChange }) {
+function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions = null }) {
+  const teams = teamOptions || ALL_TEAMS;
   return (
     <Card pad={false} className="p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -22,6 +37,11 @@ function SpecialCard({ field, value, onChange }) {
               <Icon name={field.kind === "team" ? "shield" : "star"} size={16} />
             </span>
             {field.label}
+            {fromBracket && (
+              <span className="text-[10px] font-cond font-semibold tracking-wider text-grass-400 border border-grass/30 rounded px-1.5 py-0.5 leading-none">
+                DO BRACKET
+              </span>
+            )}
           </h3>
           <p className="text-mute2 text-xs mt-0.5">{field.hint}</p>
         </div>
@@ -29,7 +49,7 @@ function SpecialCard({ field, value, onChange }) {
       </div>
       {field.kind === "team" ? (
         <Select value={value || ""} placeholder="Escolha a seleção" onChange={e => onChange(e.target.value)}>
-          {ALL_TEAMS.map(t => <option key={t} value={t}>{TEAMS[t]} · {t}</option>)}
+          {teams.map(t => <option key={t} value={t}>{TEAMS[t] ? `${TEAMS[t]} · ` : ''}{t}</option>)}
         </Select>
       ) : (
         <div className="relative">
@@ -45,11 +65,14 @@ function SpecialCard({ field, value, onChange }) {
   );
 }
 
-export function Especiais({ specials, setSpecial }) {
+export function Especiais({ specials, setSpecial, koWinners = {} }) {
+  const thirdCandidates = getThirdCandidates(koWinners);
+
   const podium = SPECIAL_FIELDS.filter(f => f.kind === "team");
   const awards = SPECIAL_FIELDS.filter(f => f.kind === "player");
   const totalPot = SPECIAL_FIELDS.reduce((s, f) => s + f.pts, 0);
   const filled = SPECIAL_FIELDS.filter(f => specials[f.key]).length;
+  const bracketFilled = SPECIAL_FIELDS.filter(f => BRACKET_KEYS.has(f.key) && specials[f.key]).length;
 
   return (
     <div>
@@ -64,7 +87,9 @@ export function Especiais({ specials, setSpecial }) {
           <span className="text-gold"><Icon name="sparkles" size={24} /></span>
           <div>
             <div className="font-cond font-semibold text-cream">Estas são as apostas que mais valem pontos.</div>
-            <div className="text-mute2 text-sm">{filled} de {SPECIAL_FIELDS.length} preenchidos</div>
+            <div className="text-mute2 text-sm">{filled} de {SPECIAL_FIELDS.length} preenchidos
+              {bracketFilled > 0 && <span className="text-grass-400"> · {bracketFilled} do bracket</span>}
+            </div>
           </div>
         </div>
         <div className="text-right">
@@ -76,7 +101,14 @@ export function Especiais({ specials, setSpecial }) {
       <SectionLabel icon="trophy">O pódio</SectionLabel>
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         {podium.map(f => (
-          <SpecialCard key={f.key} field={f} value={specials[f.key]} onChange={v => setSpecial(f.key, v)} />
+          <SpecialCard
+            key={f.key}
+            field={f}
+            value={specials[f.key]}
+            onChange={v => setSpecial(f.key, v)}
+            fromBracket={BRACKET_KEYS.has(f.key) && !!specials[f.key]}
+            teamOptions={f.key === "terceiro" && thirdCandidates.length === 2 ? thirdCandidates : null}
+          />
         ))}
       </div>
 

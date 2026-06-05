@@ -118,6 +118,18 @@ export default function App() {
     }).catch(() => {});
   }, [user?.id]);
 
+  // Sync bracket picks → specials for derivable team fields
+  useEffect(() => {
+    const champion = koWinners["4-0"];
+    const sf0Winner = koWinners["3-0"];
+    const sf1Winner = koWinners["3-1"];
+    if (champion) setSpecials(s => ({ ...s, campeao: champion }));
+    if (sf0Winner && sf1Winner) {
+      const vice = champion === sf0Winner ? sf1Winner : sf0Winner;
+      setSpecials(s => ({ ...s, vice, finalista: vice }));
+    }
+  }, [koWinners["4-0"], koWinners["3-0"], koWinners["3-1"]]);
+
   useEffect(() => {
     if (view === "admin") {
       const fetchAdminUsers = async () => {
@@ -209,7 +221,7 @@ export default function App() {
   let screen = null;
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
-    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
+    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
