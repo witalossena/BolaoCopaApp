@@ -222,7 +222,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} onReset={() => setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; })} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
     case "regras":     screen = <Regras />; break;

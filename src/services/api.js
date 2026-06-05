@@ -71,6 +71,10 @@ export const predictionService = {
   submitKnockoutPrediction: async (matchId, winnerTeam) => {
     const response = await api.post('/predictions/knockout', { matchId, winnerTeam });
     return response.data;
+  },
+  clearKnockoutPredictions: async () => {
+    const response = await api.delete('/predictions/knockout');
+    return response.data;
   }
 };
 
