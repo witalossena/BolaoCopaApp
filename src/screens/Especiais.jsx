@@ -18,7 +18,7 @@ function getThirdCandidates(koWinners) {
 }
 
 // Keys that are auto-filled from the bracket
-const BRACKET_KEYS = new Set(["campeao", "vice", "finalista"]);
+const BRACKET_KEYS = new Set(["campeao", "vice"]);
 
 const STAR_PLAYERS = [
   "Kylian Mbappé","Vinícius Júnior","Erling Haaland","Jude Bellingham","Lionel Messi",

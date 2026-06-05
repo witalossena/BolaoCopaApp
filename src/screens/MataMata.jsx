@@ -89,7 +89,7 @@ function getExternalId(round, m) {
   return null;
 }
 
-export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, thirds = {}, setThirds = () => {} }) {
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, thirds = {}, setThirds = () => {}, onReset }) {
   const ROUNDS = 5;
 
   // Qualifying groups: groups where the user has picked a 3rd-place team
@@ -225,15 +225,15 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
             <div className="font-cond text-mute text-xs tracking-widest uppercase">Seu campeão</div>
             <div className="font-display text-2xl text-gold-400">{champion}</div>
           </div>
-          <button onClick={() => setWinners({})}
+          <button onClick={() => { setWinners({}); onReset?.(); predictionService.clearKnockoutPredictions().catch(console.error); }}
             className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5" type="button">
             <Icon name="refresh" size={15} />Recomeçar
           </button>
         </Card>
       )}
 
-      <Card pad={false} className="p-4 sm:p-6 overflow-x-auto">
-        <div className="flex gap-3 sm:gap-4 min-w-[1100px]">
+      <Card pad={false} className="p-3 sm:p-5 overflow-x-auto">
+        <div className="flex gap-2 sm:gap-3 min-w-[900px] lg:min-w-0 lg:w-full">
           {Array.from({ length: ROUNDS }).map((_, round) => (
             <div key={round} className="flex-1 flex flex-col">
               <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase text-center mb-3">
@@ -254,7 +254,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
             </div>
           ))}
 
-          <div className="flex flex-col items-center justify-center w-20 shrink-0">
+          <div className="flex flex-col items-center justify-center w-16 sm:w-20 shrink-0">
             <div className="font-cond font-semibold text-gold text-xs tracking-widest uppercase mb-3">Taça</div>
             <div className={`w-16 h-16 rounded-full grid place-items-center border-2 transition ${champion ? "border-gold bg-gold-dim text-gold pop" : "border-edge text-mute2"}`}>
               <Icon name="trophy" size={30} />

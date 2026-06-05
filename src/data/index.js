@@ -177,7 +177,6 @@ export const SPECIAL_FIELDS = [
   { key:"campeao",    label:"Campeão",              pts:75, kind:"team",   hint:"Quem levanta a taça" },
   { key:"vice",       label:"Vice-campeão",         pts:55, kind:"team",   hint:"Perdedor da final" },
   { key:"terceiro",   label:"Terceiro colocado",    pts:30, kind:"team",   hint:"Vencedor da disputa de 3º" },
-  { key:"finalista",  label:"Outro finalista",      pts:40, kind:"team",   hint:"A 2ª seleção na decisão" },
   { key:"artilheiro", label:"Artilheiro",           pts:45, kind:"player", hint:"Maior goleador" },
   { key:"assist",     label:"Líder de assistências",pts:45, kind:"player", hint:"Mais passes para gol" },
   { key:"mvp",        label:"Melhor Jogador (MVP)", pts:50, kind:"player", hint:"Bola de Ouro do torneio" },
