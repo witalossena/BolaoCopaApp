@@ -8,26 +8,25 @@ import { predictionService } from '../services/api';
 import { GROUPS } from '../data';
 
 // 32 slots: [group, "first"|"second"] or ["third", slotIndex 0-7]
-// Matches 0-5:  group winners vs paired runners-up (first half)
-// Matches 6-11: group runners-up vs paired winners (second half)
-// Matches 12-15: 8 third-place teams play each other (2 per match)
+// Groups A-H (8 groups): 1sts vs 2nds among themselves — 8 matches
+// Groups I-L (4 groups): 1sts and 2nds face the 8 qualifying third-place teams — 8 matches
 const R32_BRACKET = [
-  ["A","first"],  ["B","second"],   // M0
-  ["C","first"],  ["D","second"],   // M1
-  ["E","first"],  ["F","second"],   // M2
-  ["G","first"],  ["H","second"],   // M3
-  ["I","first"],  ["J","second"],   // M4
-  ["K","first"],  ["L","second"],   // M5
-  ["B","first"],  ["A","second"],   // M6
-  ["D","first"],  ["C","second"],   // M7
-  ["F","first"],  ["E","second"],   // M8
-  ["H","first"],  ["G","second"],   // M9
-  ["J","first"],  ["I","second"],   // M10
-  ["L","first"],  ["K","second"],   // M11
-  ["third",0],    ["third",1],      // M12
-  ["third",2],    ["third",3],      // M13
-  ["third",4],    ["third",5],      // M14
-  ["third",6],    ["third",7],      // M15
+  ["A","first"],  ["B","second"],   // M0: A1 vs B2
+  ["C","first"],  ["D","second"],   // M1: C1 vs D2
+  ["E","first"],  ["F","second"],   // M2: E1 vs F2
+  ["G","first"],  ["H","second"],   // M3: G1 vs H2
+  ["B","first"],  ["A","second"],   // M4: B1 vs A2
+  ["D","first"],  ["C","second"],   // M5: D1 vs C2
+  ["F","first"],  ["E","second"],   // M6: F1 vs E2
+  ["H","first"],  ["G","second"],   // M7: H1 vs G2
+  ["I","first"],  ["third",0],      // M8:  I1 vs 3º[1]
+  ["I","second"], ["third",1],      // M9:  I2 vs 3º[2]
+  ["J","first"],  ["third",2],      // M10: J1 vs 3º[3]
+  ["J","second"], ["third",3],      // M11: J2 vs 3º[4]
+  ["K","first"],  ["third",4],      // M12: K1 vs 3º[5]
+  ["K","second"], ["third",5],      // M13: K2 vs 3º[6]
+  ["L","first"],  ["third",6],      // M14: L1 vs 3º[7]
+  ["L","second"], ["third",7],      // M15: L2 vs 3º[8]
 ];
 
 const ROUND_NAMES = ["16avos", "Oitavas", "Quartas", "Semifinal", "Final"];
