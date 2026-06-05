@@ -51,12 +51,12 @@ export default function App() {
   const [realRanking, setRealRanking] = useState([]);
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
-  const [koWinners, setKoWinners] = useState({});
+  const [koWinners, setKoWinners] = useState(saved.koWinners || {});
   const [thirds, setThirds] = useState(saved.thirds || {});
 
   useEffect(() => {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds }));
-  }, [view, user, scores, ranks, specials, adminUsers, thirds]);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners }));
+  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners]);
 
   useEffect(() => {
     const fetchRanking = async () => {
@@ -113,7 +113,7 @@ export default function App() {
           const key = externalIdToWinnerKey(externalId);
           if (key) winnerMap[key] = winnerTeam;
         });
-        setKoWinners(winnerMap);
+        setKoWinners(prev => ({ ...prev, ...winnerMap }));
       }
     }).catch(() => {});
   }, [user?.id]);
@@ -154,10 +154,11 @@ export default function App() {
     }
   };
 
-  const logout = () => { 
+  const logout = () => {
     authService.logout();
-    setUser(null); 
-    setView("landing"); 
+    setUser(null);
+    setKoWinners({});
+    setView("landing");
   };
 
   const togglePaid = async (target) => {

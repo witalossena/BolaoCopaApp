@@ -136,6 +136,8 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     const matchGuid = matchIdMap[externalId];
     if (matchGuid) {
       predictionService.submitKnockoutPrediction(matchGuid, team).catch(console.error);
+    } else {
+      console.warn(`[MataMata] matchIdMap missing entry for ${externalId} — pick saved locally only`);
     }
     setWinners(prev => {
       const next = { ...prev };
