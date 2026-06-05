@@ -52,7 +52,7 @@ export default function App() {
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
   const [koWinners, setKoWinners] = useState({});
-  const [thirds, setThirds] = useState(saved.thirds || []);
+  const [thirds, setThirds] = useState(saved.thirds || {});
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds }));
