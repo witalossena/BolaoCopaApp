@@ -15,13 +15,15 @@ const STORE_KEY = "bolao2026_v1";
 
 function externalIdToWinnerKey(externalId) {
   if (!externalId) return null;
+  const r32 = externalId.match(/^ko_r32_(\d+)$/);
+  if (r32) return `0-${r32[1]}`;
   const r16 = externalId.match(/^ko_r16_(\d+)$/);
-  if (r16) return `0-${r16[1]}`;
+  if (r16) return `1-${r16[1]}`;
   const qf = externalId.match(/^ko_qf_(\d+)$/);
-  if (qf) return `1-${qf[1]}`;
+  if (qf) return `2-${qf[1]}`;
   const sf = externalId.match(/^ko_sf_(\d+)$/);
-  if (sf) return `2-${sf[1]}`;
-  if (externalId === 'ko_final') return '3-0';
+  if (sf) return `3-${sf[1]}`;
+  if (externalId === 'ko_final') return '4-0';
   return null;
 }
 
@@ -50,10 +52,11 @@ export default function App() {
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
   const [koWinners, setKoWinners] = useState({});
+  const [thirds, setThirds] = useState(saved.thirds || []);
 
   useEffect(() => {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers }));
-  }, [view, user, scores, ranks, specials, adminUsers]);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds }));
+  }, [view, user, scores, ranks, specials, adminUsers, thirds]);
 
   useEffect(() => {
     const fetchRanking = async () => {
@@ -206,7 +209,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
     case "regras":     screen = <Regras />; break;

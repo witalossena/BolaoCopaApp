@@ -3,20 +3,34 @@ import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { PageTitle } from '../components/ui/PageTitle';
 import { TeamBadge } from '../components/ui/TeamBadge';
+import { Select } from '../components/ui/Select';
 import { predictionService } from '../services/api';
+import { GROUPS } from '../data';
 
-// Standard 8-group WC bracket seeding: [group, "first"|"second"]
-const R16_BRACKET = [
-  ["A","first"], ["B","second"],
-  ["C","first"], ["D","second"],
-  ["E","first"], ["F","second"],
-  ["G","first"], ["H","second"],
-  ["B","first"], ["A","second"],
-  ["D","first"], ["C","second"],
-  ["F","first"], ["E","second"],
-  ["H","first"], ["G","second"],
+// 32 slots: [group, "first"|"second"] or ["third", slotIndex 0-7]
+// Matches 0-5:  group winners vs paired runners-up (first half)
+// Matches 6-11: group runners-up vs paired winners (second half)
+// Matches 12-15: 8 third-place teams play each other (2 per match)
+const R32_BRACKET = [
+  ["A","first"],  ["B","second"],   // M0
+  ["C","first"],  ["D","second"],   // M1
+  ["E","first"],  ["F","second"],   // M2
+  ["G","first"],  ["H","second"],   // M3
+  ["I","first"],  ["J","second"],   // M4
+  ["K","first"],  ["L","second"],   // M5
+  ["B","first"],  ["A","second"],   // M6
+  ["D","first"],  ["C","second"],   // M7
+  ["F","first"],  ["E","second"],   // M8
+  ["H","first"],  ["G","second"],   // M9
+  ["J","first"],  ["I","second"],   // M10
+  ["L","first"],  ["K","second"],   // M11
+  ["third",0],    ["third",1],      // M12
+  ["third",2],    ["third",3],      // M13
+  ["third",4],    ["third",5],      // M14
+  ["third",6],    ["third",7],      // M15
 ];
-const ROUND_NAMES = ["Oitavas", "Quartas", "Semifinal", "Final"];
+
+const ROUND_NAMES = ["16avos", "Oitavas", "Quartas", "Semifinal", "Final"];
 
 function BracketSlot({ name, picked, onClick, dim }) {
   return (
@@ -35,20 +49,31 @@ function BracketSlot({ name, picked, onClick, dim }) {
 }
 
 function getExternalId(round, m) {
-  if (round === 0) return `ko_r16_${m}`;
-  if (round === 1) return `ko_qf_${m}`;
-  if (round === 2) return `ko_sf_${m}`;
-  if (round === 3) return `ko_final`;
+  if (round === 0) return `ko_r32_${m}`;
+  if (round === 1) return `ko_r16_${m}`;
+  if (round === 2) return `ko_qf_${m}`;
+  if (round === 3) return `ko_sf_${m}`;
+  if (round === 4) return `ko_final`;
   return null;
 }
 
-export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners }) {
-  const ROUNDS = 4;
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, thirds = [], setThirds = () => {} }) {
+  const ROUNDS = 5;
 
   const seeds = useMemo(
-    () => R16_BRACKET.map(([g, pos]) => ranks[g]?.[pos] || null),
-    [ranks]
+    () => R32_BRACKET.map(([g, pos]) => {
+      if (g === "third") return thirds[pos] || null;
+      return ranks[g]?.[pos] || null;
+    }),
+    [ranks, thirds]
   );
+
+  const eligibleThirds = useMemo(() => {
+    const taken = new Set(
+      Object.values(ranks).flatMap(r => [r.first, r.second].filter(Boolean))
+    );
+    return GROUPS.flatMap(g => g.teams.filter(t => !taken.has(t)));
+  }, [ranks]);
 
   const getTeams = (round, m) => {
     if (round === 0) return [seeds[m * 2], seeds[m * 2 + 1]];
@@ -74,9 +99,22 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     });
   };
 
-  const matchesIn = (round) => 8 / Math.pow(2, round);
+  const pickThird = (slot, team) => {
+    setThirds(prev => {
+      const next = Array.from({ length: 8 }, (_, i) => prev[i] || null);
+      if (team) {
+        const existing = next.indexOf(team);
+        if (existing !== -1) next[existing] = null;
+      }
+      next[slot] = team || null;
+      return next;
+    });
+  };
+
+  const matchesIn = (round) => 16 / Math.pow(2, round);
   const champion = winners[`${ROUNDS - 1}-0`];
-  const missingGroups = ["A","B","C","D","E","F","G","H"].filter(g => !ranks[g]?.first || !ranks[g]?.second);
+  const missingGroups = ["A","B","C","D","E","F","G","H","I","J","K","L"].filter(g => !ranks[g]?.first || !ranks[g]?.second);
+  const thirdsCount = thirds.filter(Boolean).length;
 
   return (
     <div>
@@ -90,10 +128,38 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
         <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-gold/40 bg-gold-dim/20 px-4 py-3">
           <span className="text-gold mt-0.5 shrink-0"><Icon name="clock" size={16} /></span>
           <p className="font-cond text-sm text-gold-400">
-            Defina 1º e 2º lugar nos grupos <b>{missingGroups.join(", ")}</b> para preencher as oitavas automaticamente.
+            Defina 1º e 2º lugar nos grupos <b>{missingGroups.join(", ")}</b> para preencher o bracket automaticamente.
           </p>
         </div>
       )}
+
+      <Card className="mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-grass-400"><Icon name="medal" size={18} /></span>
+          <span className="font-cond font-semibold text-cream">8 Terceiros Classificados</span>
+          <span className="ml-auto font-cond text-xs text-mute2">{thirdsCount}/8 selecionados</span>
+        </div>
+        <p className="font-cond text-sm text-mute mb-4">
+          Dos 12 grupos, os 8 melhores terceiros avançam para os 16avos. Escolha quais você prevê:
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i}>
+              <div className="font-cond text-mute2 text-[10px] tracking-widest mb-1.5">VAGA {i + 1}</div>
+              <Select
+                value={thirds[i] || ""}
+                placeholder="Selecionar..."
+                onChange={e => pickThird(i, e.target.value)}
+              >
+                {eligibleThirds
+                  .filter(t => !thirds.includes(t) || thirds[i] === t)
+                  .map(t => <option key={t} value={t}>{t}</option>)
+                }
+              </Select>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {champion && (
         <Card className="mb-6 border-gold/40 bg-gold-dim/30 flex items-center gap-4 pop">
@@ -110,13 +176,13 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
       )}
 
       <Card pad={false} className="p-4 sm:p-6 overflow-x-auto">
-        <div className="flex gap-4 sm:gap-6 min-w-[760px]">
+        <div className="flex gap-3 sm:gap-4 min-w-[1100px]">
           {Array.from({ length: ROUNDS }).map((_, round) => (
             <div key={round} className="flex-1 flex flex-col">
               <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase text-center mb-3">
                 {ROUND_NAMES[round]}
               </div>
-              <div className="flex-1 flex flex-col justify-around gap-3">
+              <div className="flex-1 flex flex-col justify-around gap-2">
                 {Array.from({ length: matchesIn(round) }).map((__, m) => {
                   const [t1, t2] = getTeams(round, m);
                   const w = winners[`${round}-${m}`];
