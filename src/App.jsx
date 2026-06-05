@@ -51,12 +51,12 @@ export default function App() {
   const [realRanking, setRealRanking] = useState([]);
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
-  const [koWinners, setKoWinners] = useState({});
-  const [thirds, setThirds] = useState(saved.thirds || []);
+  const [koWinners, setKoWinners] = useState(saved.koWinners || {});
+  const [thirds, setThirds] = useState(saved.thirds || {});
 
   useEffect(() => {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds }));
-  }, [view, user, scores, ranks, specials, adminUsers, thirds]);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners }));
+  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners]);
 
   useEffect(() => {
     const fetchRanking = async () => {
@@ -113,10 +113,22 @@ export default function App() {
           const key = externalIdToWinnerKey(externalId);
           if (key) winnerMap[key] = winnerTeam;
         });
-        setKoWinners(winnerMap);
+        setKoWinners(prev => ({ ...prev, ...winnerMap }));
       }
     }).catch(() => {});
   }, [user?.id]);
+
+  // Sync bracket picks → specials for derivable team fields
+  useEffect(() => {
+    const champion = koWinners["4-0"];
+    const sf0Winner = koWinners["3-0"];
+    const sf1Winner = koWinners["3-1"];
+    if (champion) setSpecials(s => ({ ...s, campeao: champion }));
+    if (sf0Winner && sf1Winner) {
+      const vice = champion === sf0Winner ? sf1Winner : sf0Winner;
+      setSpecials(s => ({ ...s, vice, finalista: vice }));
+    }
+  }, [koWinners["4-0"], koWinners["3-0"], koWinners["3-1"]]);
 
   useEffect(() => {
     if (view === "admin") {
@@ -154,10 +166,11 @@ export default function App() {
     }
   };
 
-  const logout = () => { 
+  const logout = () => {
     authService.logout();
-    setUser(null); 
-    setView("landing"); 
+    setUser(null);
+    setKoWinners({});
+    setView("landing");
   };
 
   const togglePaid = async (target) => {
@@ -208,7 +221,7 @@ export default function App() {
   let screen = null;
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
-    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} />; break;
+    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;

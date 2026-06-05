@@ -7,29 +7,62 @@ import { Select } from '../components/ui/Select';
 import { predictionService } from '../services/api';
 import { GROUPS } from '../data';
 
-// 32 slots: [group, "first"|"second"] or ["third", slotIndex 0-7]
-// Groups A-H (8 groups): 1sts vs 2nds among themselves — 8 matches
-// Groups I-L (4 groups): 1sts and 2nds face the 8 qualifying third-place teams — 8 matches
-const R32_BRACKET = [
-  ["A","first"],  ["B","second"],   // M0: A1 vs B2
-  ["C","first"],  ["D","second"],   // M1: C1 vs D2
-  ["E","first"],  ["F","second"],   // M2: E1 vs F2
-  ["G","first"],  ["H","second"],   // M3: G1 vs H2
-  ["B","first"],  ["A","second"],   // M4: B1 vs A2
-  ["D","first"],  ["C","second"],   // M5: D1 vs C2
-  ["F","first"],  ["E","second"],   // M6: F1 vs E2
-  ["H","first"],  ["G","second"],   // M7: H1 vs G2
-  ["I","first"],  ["third",0],      // M8:  I1 vs 3º[1]
-  ["I","second"], ["third",1],      // M9:  I2 vs 3º[2]
-  ["J","first"],  ["third",2],      // M10: J1 vs 3º[3]
-  ["J","second"], ["third",3],      // M11: J2 vs 3º[4]
-  ["K","first"],  ["third",4],      // M12: K1 vs 3º[5]
-  ["K","second"], ["third",5],      // M13: K2 vs 3º[6]
-  ["L","first"],  ["third",6],      // M14: L1 vs 3º[7]
-  ["L","second"], ["third",7],      // M15: L2 vs 3º[8]
+// Which group winners face a 3rd-place team, and which 3rd-place groups are eligible.
+// Order matters for the greedy assignment: more constrained winners go first.
+const MATCHUP_RULES = [
+  ["E", ["A", "B", "C", "D", "F"]],
+  ["I", ["C", "D", "F", "G", "H"]],
+  ["A", ["C", "E", "F", "H", "I"]],
+  ["L", ["E", "H", "I", "J", "K"]],
+  ["G", ["A", "E", "H", "I", "J"]],
+  ["D", ["B", "E", "F", "I", "J"]],
+  ["B", ["E", "F", "G", "I", "J"]],
+  ["K", null], // gets whatever qualifying group is left
 ];
 
+// R32 match specifications (16 matches, 32 teams).
+// { g, p } = group first/second place. { third: winnerGroup } = dynamic 3rd-place slot.
+// M0-M7: the 8 group winners that face a 3rd-place team.
+// M8-M15: the remaining 8 direct qualifier matches (approx. — full FIFA bracket TBD).
+const R32_MATCHES = [
+  [{ g:"E", p:"first" },  { third:"E" }],             // M0
+  [{ g:"I", p:"first" },  { third:"I" }],             // M1
+  [{ g:"A", p:"first" },  { third:"A" }],             // M2
+  [{ g:"L", p:"first" },  { third:"L" }],             // M3
+  [{ g:"G", p:"first" },  { third:"G" }],             // M4
+  [{ g:"D", p:"first" },  { third:"D" }],             // M5
+  [{ g:"B", p:"first" },  { third:"B" }],             // M6
+  [{ g:"K", p:"first" },  { third:"K" }],             // M7
+  [{ g:"C", p:"first" },  { g:"D", p:"second" }],     // M8
+  [{ g:"F", p:"first" },  { g:"E", p:"second" }],     // M9
+  [{ g:"H", p:"first" },  { g:"G", p:"second" }],     // M10
+  [{ g:"J", p:"first" },  { g:"I", p:"second" }],     // M11
+  [{ g:"A", p:"second" }, { g:"C", p:"second" }],     // M12
+  [{ g:"B", p:"second" }, { g:"F", p:"second" }],     // M13
+  [{ g:"L", p:"second" }, { g:"H", p:"second" }],     // M14
+  [{ g:"K", p:"second" }, { g:"J", p:"second" }],     // M15
+];
+
+// Given 8 qualifying group letters, assign each group winner (from MATCHUP_RULES)
+// to the qualifying group whose 3rd-place team they will face.
+function assignThirds(qualifyingGroups) {
+  if (!qualifyingGroups || qualifyingGroups.length < 8) return {};
+  const available = new Set(qualifyingGroups.slice(0, 8));
+  const result = {};
+  for (const [winner, eligible] of MATCHUP_RULES) {
+    if (!eligible) {
+      const leftover = [...available][0];
+      if (leftover) { result[winner] = leftover; available.delete(leftover); }
+    } else {
+      const match = eligible.find(g => available.has(g));
+      if (match) { result[winner] = match; available.delete(match); }
+    }
+  }
+  return result;
+}
+
 const ROUND_NAMES = ["16avos", "Oitavas", "Quartas", "Semifinal", "Final"];
+const ALL_GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 
 function BracketSlot({ name, picked, onClick, dim }) {
   return (
@@ -56,27 +89,45 @@ function getExternalId(round, m) {
   return null;
 }
 
-export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, thirds = [], setThirds = () => {} }) {
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, thirds = {}, setThirds = () => {} }) {
   const ROUNDS = 5;
 
-  const seeds = useMemo(
-    () => R32_BRACKET.map(([g, pos]) => {
-      if (g === "third") return thirds[pos] || null;
-      return ranks[g]?.[pos] || null;
-    }),
-    [ranks, thirds]
+  // Qualifying groups: groups where the user has picked a 3rd-place team
+  const qualifyingGroups = useMemo(
+    () => ALL_GROUPS.filter(g => thirds[g]),
+    [thirds]
   );
 
-  const eligibleThirds = useMemo(() => {
-    const taken = new Set(
-      Object.values(ranks).flatMap(r => [r.first, r.second].filter(Boolean))
-    );
-    return GROUPS.flatMap(g => g.teams.filter(t => !taken.has(t)));
+  // Dynamic assignment: which qualifying group's 3rd faces which group winner
+  const thirdAssignment = useMemo(
+    () => assignThirds(qualifyingGroups),
+    [qualifyingGroups]
+  );
+
+  // Eligible 3rd-place teams per group: not predicted as 1st or 2nd in that group
+  const groupThirdOptions = useMemo(() => {
+    const result = {};
+    GROUPS.forEach(g => {
+      const taken = [ranks[g.id]?.first, ranks[g.id]?.second].filter(Boolean);
+      result[g.id] = g.teams.filter(t => !taken.includes(t));
+    });
+    return result;
   }, [ranks]);
 
+  const resolveSlot = (slot) => {
+    if (slot.third) {
+      const assignedGroup = thirdAssignment[slot.third];
+      return assignedGroup ? (thirds[assignedGroup] || null) : null;
+    }
+    return ranks[slot.g]?.[slot.p] || null;
+  };
+
   const getTeams = (round, m) => {
-    if (round === 0) return [seeds[m * 2], seeds[m * 2 + 1]];
-    return [winners[`${round - 1}-${m * 2}`], winners[`${round - 1}-${m * 2 + 1}`]];
+    if (round === 0) {
+      const [s1, s2] = R32_MATCHES[m];
+      return [resolveSlot(s1), resolveSlot(s2)];
+    }
+    return [winners[`${round - 1}-${m * 2}`] || null, winners[`${round - 1}-${m * 2 + 1}`] || null];
   };
 
   const pick = (round, m, team) => {
@@ -85,6 +136,8 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     const matchGuid = matchIdMap[externalId];
     if (matchGuid) {
       predictionService.submitKnockoutPrediction(matchGuid, team).catch(console.error);
+    } else {
+      console.warn(`[MataMata] matchIdMap missing entry for ${externalId} — pick saved locally only`);
     }
     setWinners(prev => {
       const next = { ...prev };
@@ -98,22 +151,14 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     });
   };
 
-  const pickThird = (slot, team) => {
-    setThirds(prev => {
-      const next = Array.from({ length: 8 }, (_, i) => prev[i] || null);
-      if (team) {
-        const existing = next.indexOf(team);
-        if (existing !== -1) next[existing] = null;
-      }
-      next[slot] = team || null;
-      return next;
-    });
+  const pickThird = (groupId, team) => {
+    setThirds(prev => ({ ...prev, [groupId]: team || undefined }));
   };
 
   const matchesIn = (round) => 16 / Math.pow(2, round);
   const champion = winners[`${ROUNDS - 1}-0`];
-  const missingGroups = ["A","B","C","D","E","F","G","H","I","J","K","L"].filter(g => !ranks[g]?.first || !ranks[g]?.second);
-  const thirdsCount = thirds.filter(Boolean).length;
+  const missingGroups = ALL_GROUPS.filter(g => !ranks[g]?.first || !ranks[g]?.second);
+  const thirdsCount = qualifyingGroups.length;
 
   return (
     <div>
@@ -139,25 +184,38 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
           <span className="ml-auto font-cond text-xs text-mute2">{thirdsCount}/8 selecionados</span>
         </div>
         <p className="font-cond text-sm text-mute mb-4">
-          Dos 12 grupos, os 8 melhores terceiros avançam para os 16avos. Escolha quais você prevê:
+          Escolha o 3º colocado dos grupos que você prevê que avançarão. Os confrontos nos 16avos são atribuídos automaticamente conforme as regras da FIFA.
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i}>
-              <div className="font-cond text-mute2 text-[10px] tracking-widest mb-1.5">VAGA {i + 1}</div>
-              <Select
-                value={thirds[i] || ""}
-                placeholder="Selecionar..."
-                onChange={e => pickThird(i, e.target.value)}
-              >
-                {eligibleThirds
-                  .filter(t => !thirds.includes(t) || thirds[i] === t)
-                  .map(t => <option key={t} value={t}>{t}</option>)
-                }
-              </Select>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          {ALL_GROUPS.map(g => {
+            const options = groupThirdOptions[g] || [];
+            const selected = thirds[g] || "";
+            const assignment = thirdAssignment;
+            const facesWinner = Object.entries(assignment).find(([w, tg]) => tg === g)?.[0];
+            return (
+              <div key={g} className={`rounded-xl border p-2.5 transition ${selected ? "border-grass/40 bg-grass-dim/10" : "border-edge bg-surface2/30"}`}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-cond font-bold text-sm text-cream">Grupo {g}</span>
+                  {selected && facesWinner && (
+                    <span className="font-cond text-[9px] text-mute2 tracking-wider">vs 1º {facesWinner}</span>
+                  )}
+                </div>
+                <Select
+                  value={selected}
+                  placeholder="3º lugar..."
+                  onChange={e => pickThird(g, e.target.value)}
+                >
+                  {options.map(t => <option key={t} value={t}>{t}</option>)}
+                </Select>
+              </div>
+            );
+          })}
         </div>
+        {thirdsCount > 8 && (
+          <p className="mt-3 font-cond text-xs text-red-400">
+            Você selecionou {thirdsCount} grupos — apenas os 8 primeiros serão usados no bracket.
+          </p>
+        )}
       </Card>
 
       {champion && (
