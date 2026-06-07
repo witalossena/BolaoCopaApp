@@ -119,7 +119,7 @@ function GroupRanks({ group, ranks, setRank }) {
               </span>
               {label}
             </span>
-            <PointPill pts={10} tone={tone} />
+            <PointPill pts={20} tone={tone} />
           </div>
           <Select value={r[key] || ""} placeholder="Quem se classifica?"
             onChange={e => handleChange(key, e.target.value)}>

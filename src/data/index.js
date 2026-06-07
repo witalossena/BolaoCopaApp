@@ -155,7 +155,7 @@ export const SCORING = {
     { label: "Apenas resultado (vencedor ou empate)", pts: 5 },
   ],
   groups: [
-    { label: "Seleção classificada na posição certa (1º ou 2º)", pts: 10 },
+    { label: "Seleção classificada na posição certa (1º, 2º, 3º ou 4º)", pts: 20 },
     { label: "Seleção classificada, mas em outra posição", pts: 5 },
   ],
   knockout: [
