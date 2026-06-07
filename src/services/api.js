@@ -14,6 +14,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('bolao2026_v1');
+      window.dispatchEvent(new Event('auth:logout'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authService = {
   login: async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
@@ -64,8 +77,8 @@ export const predictionService = {
     const response = await api.post('/predictions/match', { matchId, homeScore, awayScore });
     return response.data;
   },
-  submitGroupRankPrediction: async (group, firstTeam, secondTeam) => {
-    const response = await api.post('/predictions/group-rank', { group, firstTeam, secondTeam });
+  submitGroupRankPrediction: async (group, firstTeam, secondTeam, thirdTeam, fourthTeam) => {
+    const response = await api.post('/predictions/group-rank', { group, firstTeam, secondTeam, thirdTeam, fourthTeam });
     return response.data;
   },
   submitKnockoutPrediction: async (matchId, winnerTeam) => {

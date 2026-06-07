@@ -43,7 +43,13 @@ export default function App() {
   const saved = useRef(loadStore()).current;
 
   const [view, setView]             = useState(saved.view || "landing");
-  const [user, setUser]             = useState(saved.user || authService.getCurrentUser());
+  const [user, setUser]             = useState(localStorage.getItem('token') ? (saved.user || authService.getCurrentUser()) : null);
+
+  useEffect(() => {
+    const handle = () => { setUser(null); setView("landing"); };
+    window.addEventListener('auth:logout', handle);
+    return () => window.removeEventListener('auth:logout', handle);
+  }, []);
   const [scores, setScores]         = useState(saved.scores || {});
   const [ranks, setRanks]           = useState(saved.ranks || {});
   const [specials, setSpecials]     = useState(saved.specials || {});
@@ -102,7 +108,7 @@ export default function App() {
         setRanks(prev => {
           const merged = { ...prev };
           data.groupRanks.forEach(g => {
-            merged[g.group] = { first: g.firstTeam, second: g.secondTeam };
+            merged[g.group] = { first: g.firstTeam, second: g.secondTeam, third: g.thirdTeam, fourth: g.fourthTeam };
           });
           return merged;
         });
@@ -168,6 +174,7 @@ export default function App() {
 
   const logout = () => {
     authService.logout();
+    localStorage.removeItem(STORE_KEY);
     setUser(null);
     setKoWinners({});
     setView("landing");

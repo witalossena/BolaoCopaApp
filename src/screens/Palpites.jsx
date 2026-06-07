@@ -79,29 +79,43 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
   );
 }
 
+const POSITIONS = [
+  { key: "first",  label: "1º lugar", icon: "crown",  colorCls: "text-gold",       tone: "gold"   },
+  { key: "second", label: "2º lugar", icon: "medal",  colorCls: "text-grass-400",  tone: "green"  },
+  { key: "third",  label: "3º lugar", icon: "award",  colorCls: "text-orange-400", tone: "bronze" },
+  { key: "fourth", label: "4º lugar", icon: "shield", colorCls: "text-mute2",      tone: "mute"   },
+];
+
 function GroupRanks({ group, ranks, setRank }) {
   const r = ranks[group.id] || {};
-  const opts = (exclude) => group.teams
-    .filter(t => t !== exclude)
-    .map(t => <option key={t} value={t}>{TEAMS[t]} · {t}</option>);
+
+  const getOpts = (currentKey) => {
+    const taken = POSITIONS
+      .filter(p => p.key !== currentKey)
+      .map(p => r[p.key])
+      .filter(Boolean);
+    return group.teams
+      .filter(t => !taken.includes(t))
+      .map(t => <option key={t} value={t}>{TEAMS[t]} · {t}</option>);
+  };
 
   const handleChange = (key, val) => {
     setRank(group.id, key, val);
-    const first = key === 'first' ? val : r.first;
-    const second = key === 'second' ? val : r.second;
+    const updated = { ...r, [key]: val };
+    const { first, second, third, fourth } = updated;
     if (first && second) {
-      predictionService.submitGroupRankPrediction(group.id, first, second).catch(console.error);
+      predictionService.submitGroupRankPrediction(group.id, first, second, third, fourth).catch(console.error);
     }
   };
 
   return (
     <div className="mt-4 pt-4 border-t border-edge/60 grid sm:grid-cols-2 gap-3">
-      {[["first", "1º lugar", "gold"], ["second", "2º lugar", "green"]].map(([key, label, tone]) => (
+      {POSITIONS.map(({ key, label, icon, colorCls, tone }) => (
         <div key={key} className="bg-bg/40 rounded-xl border border-edge p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="font-cond font-semibold text-sm flex items-center gap-1.5">
-              <span className={tone === "gold" ? "text-gold" : "text-grass-400"}>
-                <Icon name={tone === "gold" ? "crown" : "medal"} size={15} />
+              <span className={colorCls}>
+                <Icon name={icon} size={15} />
               </span>
               {label}
             </span>
@@ -109,7 +123,7 @@ function GroupRanks({ group, ranks, setRank }) {
           </div>
           <Select value={r[key] || ""} placeholder="Quem se classifica?"
             onChange={e => handleChange(key, e.target.value)}>
-            {opts(key === "first" ? r.second : r.first)}
+            {getOpts(key)}
           </Select>
         </div>
       ))}
@@ -139,6 +153,9 @@ function buildWhatsAppText(scores, ranks) {
       groupLines.forEach(l => lines.push(l));
       if (hasRanks) {
         lines.push(`1º ${r.first || "?"}  |  2º ${r.second || "?"}`);
+        if (r.third || r.fourth) {
+          lines.push(`3º ${r.third || "?"}  |  4º ${r.fourth || "?"}`);
+        }
       }
       lines.push("");
     }
