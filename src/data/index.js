@@ -159,7 +159,8 @@ export const SCORING = {
     { label: "Seleção classificada, mas em outra posição", pts: 5 },
   ],
   knockout: [
-    { label: "Vencedor de cada confronto previsto corretamente", pts: 10 },
+    { label: "Vencedor de cada confronto previsto corretamente", pts: 15 },
+    { label: "Vencedor de cada confronto previsto corretamente (placar)", pts: 20 },
   ],
   awards: [
     { key:"campeao",    label:"Campeão",                         pts:75 },

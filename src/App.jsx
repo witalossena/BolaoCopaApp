@@ -58,11 +58,12 @@ export default function App() {
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
   const [koWinners, setKoWinners] = useState(saved.koWinners || {});
+  const [koScores, setKoScores] = useState(saved.koScores || {});
   const [thirds, setThirds] = useState(saved.thirds || {});
 
   useEffect(() => {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners }));
-  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners]);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores }));
+  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores]);
 
   useEffect(() => {
     const fetchRanking = async () => {
@@ -115,11 +116,17 @@ export default function App() {
       }
       if (data.knockoutPredictions?.length > 0) {
         const winnerMap = {};
-        data.knockoutPredictions.forEach(({ externalId, winnerTeam }) => {
+        const scoreMap = {};
+        data.knockoutPredictions.forEach(({ externalId, winnerTeam, homeScore, awayScore }) => {
           const key = externalIdToWinnerKey(externalId);
-          if (key) winnerMap[key] = winnerTeam;
+          if (key) {
+            winnerMap[key] = winnerTeam;
+            if (homeScore != null && awayScore != null)
+              scoreMap[key] = { h: String(homeScore), a: String(awayScore) };
+          }
         });
         setKoWinners(prev => ({ ...prev, ...winnerMap }));
+        setKoScores(prev => ({ ...prev, ...scoreMap }));
       }
     }).catch(() => {});
   }, [user?.id]);
@@ -177,6 +184,7 @@ export default function App() {
     localStorage.removeItem(STORE_KEY);
     setUser(null);
     setKoWinners({});
+    setKoScores({});
     setView("landing");
   };
 
@@ -229,7 +237,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} onReset={() => setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; })} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
     case "regras":     screen = <Regras />; break;

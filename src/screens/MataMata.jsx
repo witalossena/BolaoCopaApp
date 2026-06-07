@@ -89,7 +89,7 @@ function getExternalId(round, m) {
   return null;
 }
 
-export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, thirds = {}, setThirds = () => {}, onReset }) {
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, koScores = {}, setKoScores = () => {}, thirds = {}, setThirds = () => {}, onReset }) {
   const ROUNDS = 5;
 
   // Qualifying groups: groups where the user has picked a 3rd-place team
@@ -132,16 +132,20 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
 
   const pick = (round, m, team) => {
     if (!team) return;
+    const key = `${round}-${m}`;
     const externalId = getExternalId(round, m);
     const matchGuid = matchIdMap[externalId];
+    const score = koScores[key];
     if (matchGuid) {
-      predictionService.submitKnockoutPrediction(matchGuid, team).catch(console.error);
+      const h = score?.h !== "" && score?.h != null ? parseInt(score.h, 10) : null;
+      const a = score?.a !== "" && score?.a != null ? parseInt(score.a, 10) : null;
+      predictionService.submitKnockoutPrediction(matchGuid, team, h, a).catch(console.error);
     } else {
       console.warn(`[MataMata] matchIdMap missing entry for ${externalId} — pick saved locally only`);
     }
     setWinners(prev => {
       const next = { ...prev };
-      next[`${round}-${m}`] = team;
+      next[key] = team;
       let r = round, idx = m;
       while (r < ROUNDS - 1) {
         idx = Math.floor(idx / 2); r += 1;
@@ -149,6 +153,33 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
       }
       return next;
     });
+    setKoScores(prev => {
+      const next = { ...prev };
+      let r = round, idx = m;
+      while (r < ROUNDS - 1) {
+        idx = Math.floor(idx / 2); r += 1;
+        delete next[`${r}-${idx}`];
+      }
+      return next;
+    });
+  };
+
+  const handleKoScore = (round, m, side, val) => {
+    const clean = val === "" ? "" : String(Math.max(0, Math.min(20, parseInt(val, 10) || 0)));
+    const key = `${round}-${m}`;
+    setKoScores(prev => ({ ...prev, [key]: { ...(prev[key] || {}), [side]: clean } }));
+  };
+
+  const submitKoScore = (round, m) => {
+    const key = `${round}-${m}`;
+    const w = winners[key];
+    const score = koScores[key];
+    if (!w || score?.h === "" || score?.h == null || score?.a === "" || score?.a == null) return;
+    const externalId = getExternalId(round, m);
+    const matchGuid = matchIdMap[externalId];
+    if (matchGuid) {
+      predictionService.submitKnockoutPrediction(matchGuid, w, parseInt(score.h, 10), parseInt(score.a, 10)).catch(console.error);
+    }
   };
 
   const pickThird = (groupId, team) => {
@@ -165,7 +196,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
       <PageTitle kicker="Fase eliminatória">Mata-Mata</PageTitle>
       <p className="text-mute -mt-3 mb-5">
         Clique na seleção que você acha que vence cada confronto — ela avança para a próxima chave.
-        Cada acerto vale <b className="text-grass-400">10 pts</b>.
+        Acerto vale <b className="text-grass-400">15 pts</b>. Com placar exato: <b className="text-gold">20 pts</b>.
       </p>
 
       {missingGroups.length > 0 && (
@@ -225,7 +256,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
             <div className="font-cond text-mute text-xs tracking-widest uppercase">Seu campeão</div>
             <div className="font-display text-2xl text-gold-400">{champion}</div>
           </div>
-          <button onClick={() => { setWinners({}); onReset?.(); predictionService.clearKnockoutPredictions().catch(console.error); }}
+          <button onClick={() => { setWinners({}); setKoScores({}); onReset?.(); predictionService.clearKnockoutPredictions().catch(console.error); }}
             className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5" type="button">
             <Icon name="refresh" size={15} />Recomeçar
           </button>
@@ -246,6 +277,23 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
                   return (
                     <div key={m} className="bg-surface2/50 border border-edge rounded-lg p-1.5 space-y-1">
                       <BracketSlot name={t1} picked={w === t1} dim={!!w} onClick={() => pick(round, m, t1)} />
+                      {w && (
+                        <div className="flex items-center justify-center gap-1 py-0.5">
+                          <input type="number" min="0" max="20"
+                            value={koScores[`${round}-${m}`]?.h ?? ""}
+                            onChange={e => handleKoScore(round, m, "h", e.target.value)}
+                            onBlur={() => submitKoScore(round, m)}
+                            placeholder="0"
+                            className="w-8 h-6 text-center text-xs font-bold rounded border bg-bg/70 border-edge text-cream focus:border-grass outline-none" />
+                          <span className="text-mute2 text-xs">×</span>
+                          <input type="number" min="0" max="20"
+                            value={koScores[`${round}-${m}`]?.a ?? ""}
+                            onChange={e => handleKoScore(round, m, "a", e.target.value)}
+                            onBlur={() => submitKoScore(round, m)}
+                            placeholder="0"
+                            className="w-8 h-6 text-center text-xs font-bold rounded border bg-bg/70 border-edge text-cream focus:border-grass outline-none" />
+                        </div>
+                      )}
                       <BracketSlot name={t2} picked={w === t2} dim={!!w} onClick={() => pick(round, m, t2)} />
                     </div>
                   );
