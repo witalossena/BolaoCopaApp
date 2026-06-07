@@ -88,6 +88,10 @@ export const predictionService = {
   clearKnockoutPredictions: async () => {
     const response = await api.delete('/predictions/knockout');
     return response.data;
+  },
+  clearAllPredictions: async () => {
+    const response = await api.delete('/predictions/all');
+    return response.data;
   }
 };
 

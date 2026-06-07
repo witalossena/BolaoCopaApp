@@ -48,11 +48,13 @@ function ptsTone(pts) {
   return { bg: "bg-danger/10 text-danger border-danger/20", label: "Errou" };
 }
 
-export function Desempenho({ user, ranking, setView, refreshProfile }) {
+export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll }) {
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [history, setHistory] = useState([]);
+  const [clearConfirm, setClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     predictionService.getPredictionHistory().then(setHistory).catch(() => {});
@@ -90,6 +92,11 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
     setRefreshing(true);
     await refreshProfile();
     setRefreshing(false);
+  };
+
+  const handleClearAll = async () => {
+    setClearing(true);
+    try { await onClearAll?.(); } finally { setClearing(false); setClearConfirm(false); }
   };
 
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -211,6 +218,33 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
           </Button>
         </Card>
       </div>
+
+      <Card className="border-danger/30 bg-danger/5">
+        <SectionLabel icon="alert">Zona de perigo</SectionLabel>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="font-cond font-semibold text-cream text-sm">Limpar todos os palpites</div>
+            <div className="font-cond text-mute2 text-xs mt-0.5">Remove placares, classificações, mata-mata e especiais. Irreversível.</div>
+          </div>
+          {!clearConfirm ? (
+            <button onClick={() => setClearConfirm(true)}
+              className="shrink-0 font-cond font-semibold text-sm px-4 h-9 rounded-xl border border-danger/50 text-danger hover:bg-danger/10 transition">
+              Limpar tudo
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setClearConfirm(false)}
+                className="font-cond text-sm px-3 h-9 rounded-xl border border-edge text-mute hover:text-cream transition">
+                Cancelar
+              </button>
+              <button onClick={handleClearAll} disabled={clearing}
+                className="font-cond font-bold text-sm px-4 h-9 rounded-xl bg-danger/90 hover:bg-danger text-white transition disabled:opacity-50">
+                {clearing ? "Limpando..." : "Confirmar reset"}
+              </button>
+            </div>
+          )}
+        </div>
+      </Card>
 
       {history.length > 0 && (
         <Card accent>

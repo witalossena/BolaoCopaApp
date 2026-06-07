@@ -157,6 +157,16 @@ export default function App() {
     }
   }, [view]);
 
+  const handleClearAll = async () => {
+    await predictionService.clearAllPredictions();
+    setScores({});
+    setRanks({});
+    setSpecials({});
+    setKoWinners({});
+    setKoScores({});
+    setThirds({});
+  };
+
   const setScore = (id, side, val) => {
     const clean = val === "" ? "" : String(Math.max(0, Math.min(20, parseInt(val, 10) || 0)));
     setScores(s => ({ ...s, [id]: { ...(s[id] || {}), [side]: clean } }));
@@ -239,7 +249,7 @@ export default function App() {
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
-    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
+    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} onClearAll={handleClearAll} />; break;
     case "regras":     screen = <Regras />; break;
     case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
