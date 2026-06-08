@@ -27,7 +27,6 @@ function NavButton({ item, active, onClick }) {
 
 export function AppShell({ user, view, setView, onLogout, children }) {
   const [drawer, setDrawer] = useState(false);
-  const pending = user && !user.paid;
 
   const SidebarContent = (
     <div className="flex flex-col h-full">
@@ -100,14 +99,6 @@ export function AppShell({ user, view, setView, onLogout, children }) {
 
             <div className="flex-1" />
 
-            {pending && (
-              <button onClick={() => setView("desempenho")}
-                className="flex items-center gap-2 bg-[#3a2f12] border border-gold/40 text-gold-400 rounded-full pl-2.5 pr-3.5 py-1.5 text-xs font-cond font-semibold hover:bg-gold-dim transition">
-                <Icon name="alert" size={15} />
-                <span className="hidden sm:inline">Pagamento pendente</span>
-                <span className="sm:hidden">Pendente</span>
-              </button>
-            )}
             <button onClick={() => setView("ranking")}
               className="flex items-center gap-2 bg-surface2 border border-edge rounded-full pl-2.5 pr-3.5 py-1.5 hover:border-edge2 transition">
               <Icon name="trophy" size={15} className="text-gold" />
