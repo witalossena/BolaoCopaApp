@@ -38,14 +38,22 @@ export function ExportPDFLayout({ user, matchPredictions, groupRanks, knockoutPr
                   </div>
                   <div className="p-3">
                     {/* Classification */}
-                    <div className="grid grid-cols-2 gap-2 mb-3 pb-3 border-b border-slate-100">
-                      <div className="text-[11px]">
-                        <div className="text-slate-400 font-bold uppercase tracking-[0.05em] mb-0.5">1º Lugar</div>
-                        <div className="font-bold text-slate-800 truncate">{rank?.firstTeam || '–'}</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-3 pb-3 border-b border-slate-100">
+                      <div className="min-w-0">
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">1º Lugar</div>
+                        <div className="font-bold text-slate-800 text-[11px] leading-tight break-words">{rank?.firstTeam || '–'}</div>
                       </div>
-                      <div className="text-[11px]">
-                        <div className="text-slate-400 font-bold uppercase tracking-[0.05em] mb-0.5">2º Lugar</div>
-                        <div className="font-bold text-slate-800 truncate">{rank?.secondTeam || '–'}</div>
+                      <div className="min-w-0">
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">2º Lugar</div>
+                        <div className="font-bold text-slate-800 text-[11px] leading-tight break-words">{rank?.secondTeam || '–'}</div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">3º Lugar</div>
+                        <div className="font-bold text-slate-600 text-[10px] leading-tight break-words">{rank?.thirdTeam || '–'}</div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">4º Lugar</div>
+                        <div className="font-bold text-slate-600 text-[10px] leading-tight break-words">{rank?.fourthTeam || '–'}</div>
                       </div>
                     </div>
                     {/* Matches */}
