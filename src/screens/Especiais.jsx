@@ -24,10 +24,56 @@ const STAR_PLAYERS = [
   "Kylian Mbappé","Vinícius Júnior","Erling Haaland","Jude Bellingham","Lionel Messi",
   "Lamine Yamal","Harry Kane","Rodrygo","Pedri","Florian Wirtz","Bukayo Saka",
   "Phil Foden","Rafael Leão","Julián Álvarez","Federico Valverde","Cristiano Ronaldo",
+  "Endrick", "Arda Güler", "Kobbie Mainoo", "Warren Zaïre-Emery", "Pau Cubarsí",
+  "Leny Yoro", "Kenan Yıldız", "Désiré Doué", "João Neves", "Jorrel Hato",
+  "Antonio Nusa", "Gilberto Mora"
+];
+
+const GOLDEN_BOY_CANDIDATES = [
+  { name: "Lamine Yamal", team: "Espanha", pos: "Atacante" },
+  { name: "Endrick", team: "Brasil", pos: "Atacante" },
+  { name: "Arda Güler", team: "Turquia", pos: "Meio-campista" },
+  { name: "Kobbie Mainoo", team: "Inglaterra", pos: "Meio-campista" },
+  { name: "Warren Zaïre-Emery", team: "França", pos: "Meio-campista" },
+  { name: "Pau Cubarsí", team: "Espanha", pos: "Zagueiro" },
+  { name: "Leny Yoro", team: "França", pos: "Zagueiro" },
+  { name: "Kenan Yıldız", team: "Turquia", pos: "Atacante" },
+  { name: "Désiré Doué", team: "França", pos: "Meio-campista" },
+  { name: "João Neves", team: "Portugal", pos: "Meio-campista" },
+  { name: "Jorrel Hato", team: "Holanda", pos: "Defensor" },
+  { name: "Antonio Nusa", team: "Noruega", pos: "Atacante" },
+  { name: "Gilberto Mora", team: "México", pos: "Meio-campista" },
 ];
 
 function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions = null }) {
   const teams = teamOptions || ALL_TEAMS;
+
+  if (field.key === "goldenboy") {
+    return (
+      <Card pad={false} className="p-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <h3 className="font-cond font-bold text-cream text-base flex items-center gap-2">
+              <span className="text-gold">
+                <Icon name="star" size={16} />
+              </span>
+              {field.label}
+            </h3>
+            <p className="text-mute2 text-xs mt-0.5">{field.hint}</p>
+          </div>
+          <PointPill pts={field.pts} tone="gold" />
+        </div>
+        <Select value={value || ""} placeholder="Escolha o Golden Boy" onChange={e => onChange(e.target.value)}>
+          {GOLDEN_BOY_CANDIDATES.map(p => (
+            <option key={p.name} value={p.name}>
+              {p.name} ({p.team} · {p.pos})
+            </option>
+          ))}
+        </Select>
+      </Card>
+    );
+  }
+
   return (
     <Card pad={false} className="p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
