@@ -268,7 +268,7 @@ export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {},
           ))}
         </div>
 
-        <GroupRanks group={group} ranks={ranks} setRank={setRank} />
+        <GroupRanks group={group} ranks={ranks} setRank={setRank} locked={locked} />
       </Card>
 
       <div className="flex items-center justify-between mt-5 gap-3 flex-wrap">
