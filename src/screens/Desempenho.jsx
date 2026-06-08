@@ -53,11 +53,13 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
   const [loadingPix, setLoadingPix] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [history, setHistory] = useState([]);
+  const [groupRanks, setGroupRanks] = useState([]);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     predictionService.getPredictionHistory().then(setHistory).catch(() => {});
+    predictionService.getUserPredictions().then(d => setGroupRanks(d.groupRanks || [])).catch(() => {});
   }, []);
 
   const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
@@ -246,39 +248,67 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
         </div>
       </Card>
 
-      {history.length > 0 && (
+      {(history.length > 0 || groupRanks.length > 0) && (
         <Card accent className="mt-6">
           <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
-          <div className="divide-y divide-edge/40">
-            {history.map((item, i) => {
-              const tone = ptsTone(item.points);
-              return (
-                <div key={i} className="py-3 flex items-center gap-3">
-                  <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(item.matchDate)}</span>
 
-                  <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.homeTeam}</span>
-                    <TeamBadge name={item.homeTeam} showName={false} size="sm" />
+          {history.length > 0 && (
+            <div className="divide-y divide-edge/40">
+              {history.map((item, i) => {
+                const tone = ptsTone(item.points);
+                return (
+                  <div key={i} className="py-3 flex items-center gap-3">
+                    <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(item.matchDate)}</span>
+
+                    <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                      <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.homeTeam}</span>
+                      <TeamBadge name={item.homeTeam} showName={false} size="sm" />
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 font-cond text-sm">
+                      <span className="text-mute2">{item.predictedHome}×{item.predictedAway}</span>
+                      <span className="text-mute2 mx-1 text-xs">→</span>
+                      <span className="text-cream font-bold">{item.realHome}×{item.realAway}</span>
+                    </div>
+
+                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                      <TeamBadge name={item.awayTeam} showName={false} size="sm" />
+                      <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.awayTeam}</span>
+                    </div>
+
+                    <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
+                      {item.points > 0 ? `+${item.points}` : "0"} pts
+                    </span>
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  <div className="flex items-center gap-1 shrink-0 font-cond text-sm">
-                    <span className="text-mute2">{item.predictedHome}×{item.predictedAway}</span>
-                    <span className="text-mute2 mx-1 text-xs">→</span>
-                    <span className="text-cream font-bold">{item.realHome}×{item.realAway}</span>
-                  </div>
-
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <TeamBadge name={item.awayTeam} showName={false} size="sm" />
-                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.awayTeam}</span>
-                  </div>
-
-                  <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
-                    {item.points > 0 ? `+${item.points}` : "0"} pts
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {groupRanks.length > 0 && (
+            <div className={`${history.length > 0 ? "mt-4 pt-4 border-t border-edge/40" : ""}`}>
+              <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
+              <div className="space-y-2">
+                {groupRanks.map(g => {
+                  const tone = ptsTone(g.points || 0);
+                  return (
+                    <div key={g.group} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2">
+                      <span className="font-display text-cream w-5 shrink-0 text-sm">{g.group}</span>
+                      <div className="flex-1 font-cond text-xs text-cream space-y-0.5 min-w-0">
+                        <div className="truncate">1º {g.firstTeam} · 2º {g.secondTeam}</div>
+                        {(g.thirdTeam || g.fourthTeam) && (
+                          <div className="truncate text-mute2">3º {g.thirdTeam || '–'} · 4º {g.fourthTeam || '–'}</div>
+                        )}
+                      </div>
+                      <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
+                        {(g.points || 0) > 0 ? `+${g.points}` : "–"} pts
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </Card>
       )}
     </div>
