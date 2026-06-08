@@ -21,9 +21,14 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
 
   const submitIfComplete = () => {
     const matchGuid = matchIdMap[match.id];
-    const h = homeRef.current?.value;
-    const a = awayRef.current?.value;
-    if (!matchGuid || h === "" || h == null || a === "" || a == null) return;
+    if (!matchGuid) return;
+    let h = homeRef.current?.value;
+    let a = awayRef.current?.value;
+    const hFilled = h !== "" && h != null;
+    const aFilled = a !== "" && a != null;
+    if (!hFilled && !aFilled) return;
+    if (hFilled && !aFilled) { a = "0"; onScore("a", "0"); }
+    if (aFilled && !hFilled) { h = "0"; onScore("h", "0"); }
     predictionService.submitMatchPrediction(matchGuid, parseInt(h, 10), parseInt(a, 10))
       .catch(console.error);
   };
@@ -61,12 +66,22 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
       </div>
 
       <div className="shrink-0 flex justify-end w-6 sm:w-28">
-        {locked && (
-          <>
-            <span className="sm:hidden text-mute2"><Icon name="lock" size={14} /></span>
-            <span className="hidden sm:block"><Badge tone="locked" icon="lock">Encerrada</Badge></span>
-          </>
-        )}
+        {locked && (() => {
+          const hasH = score?.h !== "" && score?.h != null;
+          const hasA = score?.a !== "" && score?.a != null;
+          const incomplete = (hasH || hasA) && !(hasH && hasA);
+          return incomplete ? (
+            <>
+              <span className="sm:hidden text-gold"><Icon name="alert" size={14} /></span>
+              <span className="hidden sm:block"><Badge tone="amber" icon="alert">Incompleto</Badge></span>
+            </>
+          ) : (
+            <>
+              <span className="sm:hidden text-mute2"><Icon name="lock" size={14} /></span>
+              <span className="hidden sm:block"><Badge tone="locked" icon="lock">Encerrada</Badge></span>
+            </>
+          );
+        })()}
         {soon && (
           <>
             <span className="sm:hidden text-gold"><Icon name="clock" size={14} /></span>
