@@ -219,7 +219,7 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
         </Card>
       </div>
 
-      <Card className="border-danger/30 bg-danger/5">
+      <Card className="border-danger/30 bg-danger/5 mb-6">
         <SectionLabel icon="alert">Zona de perigo</SectionLabel>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
@@ -247,7 +247,7 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
       </Card>
 
       {history.length > 0 && (
-        <Card accent>
+        <Card accent className="mt-6">
           <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
           <div className="divide-y divide-edge/40">
             {history.map((item, i) => {
