@@ -183,6 +183,10 @@ export const adminService = {
       headers: { 'Content-Type': 'application/json' }
     });
     return response.data;
+  },
+  confirmPayment: async (handle, amount) => {
+    const response = await api.post('/admin/confirm-payment', { handle, amount });
+    return response.data;
   }
 };
 

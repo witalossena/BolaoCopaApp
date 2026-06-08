@@ -145,6 +145,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
+  const [paymentUser, setPaymentUser] = useState(null);
   const [localPrizePool, setLocalPrizePool] = useState(prizePool);
   const [savingPrize, setSavingPrize] = useState(false);
   const [lockingAll, setLockingAll] = useState(false);
@@ -215,6 +216,25 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
       showToast("Erro ao recalcular pontuações.");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const handleConfirmPayment = async (amount) => {
+    setBusy(`pay-${paymentUser.id}`);
+    try {
+      await adminService.confirmPayment(paymentUser.handle, amount);
+      togglePaid(paymentUser.id, amount > 0);
+      
+      // Update local prize pool state
+      const oldAmount = paymentUser.paidAmount || 0;
+      setPrizePool(prev => prev - oldAmount + amount);
+      
+      showToast(`Pagamento de ${paymentUser.name} registrado!`);
+    } catch (err) {
+      showToast("Erro ao registrar pagamento.");
+    } finally {
+      setBusy(null);
+      setPaymentUser(null);
     }
   };
 
@@ -691,7 +711,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
                   : <Badge tone="amber" icon="clock">Pendente</Badge>}
               </span>
             </div>
-            <button onClick={() => togglePaid(u)}
+            <button onClick={() => setPaymentUser(u)}
               className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left">
               {u.isPaid ? "Marcar pend." : "Marcar pago"}
             </button>
@@ -711,12 +731,63 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
         />
       )}
 
+      {paymentUser && (
+        <PaymentModal 
+          user={paymentUser} 
+          onClose={() => setPaymentUser(null)} 
+          onConfirm={handleConfirmPayment} 
+        />
+      )}
+
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface border border-grass/40 text-cream rounded-full px-5 py-3 shadow-card flex items-center gap-2.5 pop">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-edge/80 px-5 py-3 rounded-2xl shadow-card flex items-center gap-2.5 pop">
           <Icon name="checkCircle" size={18} className="text-grass-400" />
           <span className="font-cond font-semibold text-sm">{toast}</span>
         </div>
       )}
-    </div>
-  );
-}
+      </div>
+      );
+      }
+
+      function PaymentModal({ user, onClose, onConfirm }) {
+      const [val, setVal] = useState(user.isPaid ? String(user.paidAmount || "50") : "50");
+      return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/80 backdrop-blur-sm pop">
+      <Card className="w-full max-w-sm border-gold/30 shadow-2xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-full bg-gold-dim/20 border border-gold/40 grid place-items-center text-gold">
+            <Icon name="wallet" size={24} />
+          </div>
+          <div>
+            <h3 className="font-display text-xl text-cream">Registrar Pagamento</h3>
+            <p className="text-mute2 text-xs font-cond uppercase tracking-widest">{user.name}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          <div>
+            <label className="block text-[10px] font-cond font-bold text-mute2 uppercase tracking-widest mb-1.5 pl-1">
+              Valor Recebido (R$)
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold font-bold text-lg">R$</span>
+              <input autoFocus type="number" value={val} onChange={e => setVal(e.target.value)}
+                className="w-full bg-bg/60 border border-edge focus:border-gold rounded-xl h-14 pl-12 pr-4 text-2xl font-display text-cream outline-none transition" />
+            </div>
+          </div>
+          <p className="text-mute text-xs italic text-center px-4 leading-relaxed">
+            Ao confirmar, o usuário será marcado como <span className="text-gold font-bold">PAGO</span> e o valor será somado ao total.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" className="bg-gold text-bg border-gold hover:brightness-110" 
+            onClick={() => onConfirm(parseFloat(val) || 0)}>
+            {parseFloat(val) > 0 ? "Confirmar" : "Remover Pago"}
+          </Button>
+        </div>
+      </Card>
+      </div>
+      );
+      }
