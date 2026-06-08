@@ -103,8 +103,8 @@ export const rankingService = {
 };
 
 export const tournamentService = {
-  getPhase: async () => {
-    const response = await api.get('/tournament/phase');
+  getInfo: async () => {
+    const response = await api.get('/tournament/info');
     return response.data;
   }
 };
@@ -168,6 +168,12 @@ export const adminService = {
   },
   setTournamentPhase: async (phase) => {
     const response = await api.patch('/admin/tournament/phase', JSON.stringify(phase), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+  setPrizePool: async (amount) => {
+    const response = await api.patch('/admin/tournament/prize-pool', amount, {
       headers: { 'Content-Type': 'application/json' }
     });
     return response.data;

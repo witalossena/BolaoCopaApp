@@ -129,7 +129,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase }) {
+export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase, prizePool = 0, setPrizePool }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -145,6 +145,9 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
+  const [localPrizePool, setLocalPrizePool] = useState(prizePool);
+  const [savingPrize, setSavingPrize] = useState(false);
+  useEffect(() => { setLocalPrizePool(prizePool); }, [prizePool]);
 
   useEffect(() => {
     adminService.getGroupResults().then(data => {
@@ -211,6 +214,19 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
       showToast("Erro ao recalcular pontuações.");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const savePrize = async () => {
+    setSavingPrize(true);
+    try {
+      await adminService.setPrizePool(parseFloat(localPrizePool) || 0);
+      setPrizePool(parseFloat(localPrizePool) || 0);
+      showToast("Premiação salva.");
+    } catch {
+      showToast("Erro ao salvar premiação.");
+    } finally {
+      setSavingPrize(false);
     }
   };
 
@@ -381,6 +397,25 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
           }}>
           {busy === "phase" ? "..." : tournamentPhase === "KnockoutStage" ? "Bloquear Mata-Mata" : "Abrir Mata-Mata"}
         </Button>
+      </Card>
+
+      <Card className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div className="font-cond font-semibold text-cream text-sm">Premiação</div>
+          <div className="font-cond text-mute2 text-xs mt-0.5">Valor total do prêmio a ser distribuído entre os participantes.</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-cond text-mute2 text-sm shrink-0">R$</span>
+          <input
+            type="number" min="0" step="0.01"
+            value={localPrizePool}
+            onChange={e => setLocalPrizePool(e.target.value)}
+            className="w-28 h-9 px-3 text-sm font-cond font-bold rounded-xl border outline-none transition bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25"
+          />
+          <Button variant="primary" size="sm" disabled={savingPrize} onClick={savePrize}>
+            {savingPrize ? "..." : "Salvar"}
+          </Button>
+        </div>
       </Card>
 
       <Card pad={false} className="overflow-hidden mb-6">

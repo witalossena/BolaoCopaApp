@@ -61,13 +61,17 @@ export default function App() {
   const [koScores, setKoScores] = useState(saved.koScores || {});
   const [thirds, setThirds] = useState(saved.thirds || {});
   const [tournamentPhase, setTournamentPhase] = useState("GroupStage");
+  const [prizePool, setPrizePool] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores }));
   }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores]);
 
   useEffect(() => {
-    tournamentService.getPhase().then(setTournamentPhase).catch(() => {});
+    tournamentService.getInfo().then(d => {
+      setTournamentPhase(d.phase);
+      setPrizePool(d.prizePool ?? 0);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -254,9 +258,9 @@ export default function App() {
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
-    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} onClearAll={handleClearAll} />; break;
+    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} />; break;
     case "regras":     screen = <Regras />; break;
-    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} />; break;
+    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
   }
 

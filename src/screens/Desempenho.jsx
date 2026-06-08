@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { PageTitle } from '../components/ui/PageTitle';
 import { SectionLabel } from '../components/ui/SectionLabel';
 import { TeamBadge } from '../components/ui/TeamBadge';
-import { paymentService, predictionService } from '../services/api';
+import { predictionService } from '../services/api';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -48,10 +48,7 @@ function ptsTone(pts) {
   return { bg: "bg-danger/10 text-danger border-danger/20", label: "Errou" };
 }
 
-export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll }) {
-  const [pixData, setPixData] = useState(null);
-  const [loadingPix, setLoadingPix] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+export function Desempenho({ user, ranking, setView, onClearAll }) {
   const [history, setHistory] = useState([]);
   const [groupRanks, setGroupRanks] = useState([]);
   const [clearConfirm, setClearConfirm] = useState(false);
@@ -73,29 +70,6 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
     ? history.reduce((a, b) => (b.points > a.points ? b : a), history[0])
     : null;
 
-  const handlePay = async () => {
-    setLoadingPix(true);
-    try {
-      const data = await paymentService.generatePix();
-      setPixData(data);
-    } catch (err) {
-      console.error("Failed to generate PIX:", err);
-    } finally {
-      setLoadingPix(false);
-    }
-  };
-
-  const copyPix = () => {
-    if (!pixData) return;
-    navigator.clipboard.writeText(pixData.qrCodeCopyPaste);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshProfile();
-    setRefreshing(false);
-  };
-
   const handleClearAll = async () => {
     setClearing(true);
     try { await onClearAll?.(); } finally { setClearing(false); setClearConfirm(false); }
@@ -106,55 +80,6 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
   return (
     <div>
       <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`}>Meu Desempenho</PageTitle>
-
-      {!user.isPaid && (
-        <Card className="mb-6 -mt-2 border-gold/40 bg-gold-dim/30">
-          <div className="flex flex-wrap items-center gap-4 justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-gold-400"><Icon name="alert" size={22} /></span>
-              <div>
-                <div className="font-cond font-bold text-gold-400">Pagamento pendente</div>
-                <div className="text-mute text-sm">Confirme sua inscrição para validar os pontos no ranking oficial.</div>
-              </div>
-            </div>
-            {!pixData && (
-              <Button variant="gold" size="sm" icon="wallet" onClick={handlePay} disabled={loadingPix}>
-                {loadingPix ? "Gerando..." : "Pagar inscrição · R$ 30"}
-              </Button>
-            )}
-          </div>
-
-          {pixData && (
-            <div className="mt-6 pt-6 border-t border-gold/20 flex flex-col md:flex-row items-center gap-8 fade-in overflow-hidden">
-              <div className="bg-white p-3 rounded-2xl shadow-lg shrink-0">
-                <img src={`data:image/jpeg;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" className="w-40 h-40" />
-              </div>
-              <div className="flex-1 min-w-0 w-full text-center md:text-left">
-                <h3 className="font-display text-xl text-cream mb-2">Escaneie o QR Code</h3>
-                <p className="text-mute text-sm mb-4">
-                  Ou copie e cole o código abaixo no aplicativo do seu banco para completar o pagamento de <strong>R$ 30,00</strong>.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 min-w-0 bg-bg/60 border border-edge rounded-xl px-4 py-3 font-mono text-[11px] text-mute overflow-hidden">
-                    <span className="block truncate">{pixData.qrCodeCopyPaste}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="secondary" icon="copy" onClick={copyPix}>
-                      Copiar
-                    </Button>
-                    <Button variant="primary" icon="refresh" onClick={handleRefresh} disabled={refreshing}>
-                      {refreshing ? "..." : "Já paguei"}
-                    </Button>
-                  </div>
-                </div>
-                <p className="mt-4 text-xs text-mute2 italic">
-                  * Após o pagamento, o status será atualizado automaticamente em alguns instantes.
-                </p>
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <BigStat icon="zap" value={total} label="Pontos totais acumulados" />
@@ -191,7 +116,6 @@ export function Desempenho({ user, ranking, setView, refreshProfile, onClearAll 
             {[
               ["Placares exatos acertados", `${pts.exactCount}`, "ball"],
               ["Distância para o líder", distance, "arrowUpRight"],
-              ["Inscrição", user.isPaid ? "Confirmada" : "Pendente", "wallet"],
             ].map(([l, v, ic]) => (
               <div key={l} className="flex items-center justify-between py-2 border-b border-edge/50 last:border-0">
                 <span className="flex items-center gap-2.5 text-mute text-sm">
