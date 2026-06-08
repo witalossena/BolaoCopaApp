@@ -150,6 +150,10 @@ export const adminService = {
   getUserPredictions: async (userId) => {
     const response = await api.get(`/admin/users/${userId}/predictions`);
     return response.data;
+  },
+  resetMatchResult: async (matchId) => {
+    const response = await api.delete(`/admin/matches/${matchId}/result`);
+    return response.data;
   }
 };
 

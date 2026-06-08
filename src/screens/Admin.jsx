@@ -138,6 +138,7 @@ export function Admin({ allUsers, togglePaid }) {
   const [activeGroup, setActiveGroup] = useState("A");
   const [localScores, setLocalScores] = useState({});
   const [savingMatch, setSavingMatch] = useState(null);
+  const [resettingMatch, setResettingMatch] = useState(null);
   const [lockingMatch, setLockingMatch] = useState(null);
   const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "classificacao" | "matamata"
   const [groupResults, setGroupResults] = useState({});
@@ -241,6 +242,22 @@ export function Admin({ allUsers, togglePaid }) {
 
   const setGroupResult = (groupId, key, val) => {
     setGroupResults(prev => ({ ...prev, [groupId]: { ...(prev[groupId] || {}), [key]: val } }));
+  };
+
+  const resetResult = async (matchId) => {
+    setResettingMatch(matchId);
+    try {
+      await adminService.resetMatchResult(matchId);
+      setMatches(prev => prev.map(m =>
+        m.id === matchId ? { ...m, status: "Open", realHome: null, realAway: null } : m
+      ));
+      setLocalScores(prev => ({ ...prev, [matchId]: { h: "", a: "" } }));
+      showToast("Resultado removido.");
+    } catch {
+      showToast("Erro ao resetar resultado.");
+    } finally {
+      setResettingMatch(null);
+    }
   };
 
   const saveResult = async (matchId) => {
@@ -404,6 +421,13 @@ export function Admin({ allUsers, togglePaid }) {
                   {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
                 </Button>
               );
+              const resetBtn = hasResult && (
+                <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
+                  title="Remover resultado"
+                  className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                  <Icon name="x" size={13} />
+                </button>
+              );
               return (
                 <div key={m.id} className="px-3 sm:px-5 py-3">
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -425,7 +449,7 @@ export function Admin({ allUsers, togglePaid }) {
                       <TeamBadge name={m.awayTeam} showName={false} size="sm" />
                       <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                     </div>
-                    {lockBtn}{saveBtn}
+                    {lockBtn}{saveBtn}{resetBtn}
                   </div>
                 </div>
               );
@@ -526,6 +550,13 @@ export function Admin({ allUsers, togglePaid }) {
                             className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
                             {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
                           </Button>
+                          {hasResult && (
+                            <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
+                              title="Remover resultado"
+                              className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                              <Icon name="x" size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
