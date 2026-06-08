@@ -129,7 +129,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase, prizePool = 0, setPrizePool }) {
+export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -147,6 +147,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
   const [viewingUser, setViewingUser] = useState(null);
   const [localPrizePool, setLocalPrizePool] = useState(prizePool);
   const [savingPrize, setSavingPrize] = useState(false);
+  const [lockingAll, setLockingAll] = useState(false);
   useEffect(() => { setLocalPrizePool(prizePool); }, [prizePool]);
 
   useEffect(() => {
@@ -214,6 +215,20 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
       showToast("Erro ao recalcular pontuações.");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const toggleLockAll = async () => {
+    const next = !arePredictionsLocked;
+    setLockingAll(true);
+    try {
+      await adminService.lockAllPredictions(next);
+      setArePredictionsLocked(next);
+      showToast(next ? "Todas as apostas foram travadas!" : "Apostas liberadas para edição.");
+    } catch {
+      showToast("Erro ao alterar trava global.");
+    } finally {
+      setLockingAll(false);
     }
   };
 
@@ -365,12 +380,16 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
         <AdminTile icon="ball"   value={TOTAL_MATCHES} label="JOGOS NO BANCO" />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+      <div className="grid sm:grid-cols-3 gap-3 mb-4">
         <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
           {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
         <Button variant="primary" size="lg" icon="calculator" disabled={!!busy} onClick={handleCalculate}>
           {busy === "calc" ? "Calculando..." : "Calcular Pontuações"}
+        </Button>
+        <Button variant={arePredictionsLocked ? "danger" : "secondary"} size="lg" icon={arePredictionsLocked ? "lock" : "unlock"}
+          disabled={lockingAll} onClick={toggleLockAll}>
+          {lockingAll ? "..." : arePredictionsLocked ? "Apostas Travadas" : "Travar Tudo"}
         </Button>
       </div>
 

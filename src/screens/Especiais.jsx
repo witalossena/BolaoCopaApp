@@ -45,7 +45,7 @@ const GOLDEN_BOY_CANDIDATES = [
   { name: "Gilberto Mora", team: "México", pos: "Meio-campista" },
 ];
 
-function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions = null }) {
+function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions = null, locked = false }) {
   const teams = teamOptions || ALL_TEAMS;
 
   if (field.key === "goldenboy") {
@@ -63,7 +63,7 @@ function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions 
           </div>
           <PointPill pts={field.pts} tone="gold" />
         </div>
-        <Select value={value || ""} placeholder="Escolha o Golden Boy" onChange={e => onChange(e.target.value)}>
+        <Select value={value || ""} placeholder="Escolha o Golden Boy" onChange={e => onChange(e.target.value)} disabled={locked}>
           {GOLDEN_BOY_CANDIDATES.map(p => (
             <option key={p.name} value={p.name}>
               {p.name} ({p.team} · {p.pos})
@@ -94,7 +94,7 @@ function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions 
         <PointPill pts={field.pts} tone="gold" />
       </div>
       {field.kind === "team" ? (
-        <Select value={value || ""} placeholder="Escolha a seleção" onChange={e => onChange(e.target.value)}>
+        <Select value={value || ""} placeholder="Escolha a seleção" onChange={e => onChange(e.target.value)} disabled={locked}>
           {teams.map(t => <option key={t} value={t}>{TEAMS[t] ? `${TEAMS[t]} · ` : ''}{t}</option>)}
         </Select>
       ) : (
@@ -103,15 +103,16 @@ function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions 
             <Icon name="user" size={16} />
           </span>
           <input list="star-players" value={value || ""} onChange={e => onChange(e.target.value)}
+            disabled={locked}
             placeholder="Nome do jogador"
-            className="w-full bg-bg/70 border border-edge focus:border-grass rounded-xl py-2.5 pl-10 pr-3 text-sm font-cond font-semibold text-cream placeholder-mute2 outline-none focus:ring-2 focus:ring-grass/25 transition" />
+            className="w-full bg-bg/70 border border-edge focus:border-grass rounded-xl py-2.5 pl-10 pr-3 text-sm font-cond font-semibold text-cream placeholder-mute2 outline-none focus:ring-2 focus:ring-grass/25 transition disabled:opacity-60 disabled:cursor-not-allowed" />
         </div>
       )}
     </Card>
   );
 }
 
-export function Especiais({ specials, setSpecial, koWinners = {} }) {
+export function Especiais({ specials, setSpecial, koWinners = {}, locked = false }) {
   const thirdCandidates = getThirdCandidates(koWinners);
 
   const podium = SPECIAL_FIELDS.filter(f => f.kind === "team");
@@ -154,6 +155,7 @@ export function Especiais({ specials, setSpecial, koWinners = {} }) {
             onChange={v => setSpecial(f.key, v)}
             fromBracket={BRACKET_KEYS.has(f.key) && !!specials[f.key]}
             teamOptions={f.key === "terceiro" && thirdCandidates.length === 2 ? thirdCandidates : null}
+            locked={locked}
           />
         ))}
       </div>
@@ -161,13 +163,22 @@ export function Especiais({ specials, setSpecial, koWinners = {} }) {
       <SectionLabel icon="award">Premiações individuais</SectionLabel>
       <div className="grid sm:grid-cols-2 gap-4">
         {awards.map(f => (
-          <SpecialCard key={f.key} field={f} value={specials[f.key]} onChange={v => setSpecial(f.key, v)} />
+          <SpecialCard key={f.key} field={f} value={specials[f.key]} onChange={v => setSpecial(f.key, v)} locked={locked} />
         ))}
       </div>
 
       <div className="mt-6 flex items-center gap-2 text-mute2 text-sm">
-        <Icon name="checkCircle" size={16} className="text-grass-400" />
-        Palpites salvos automaticamente. Você pode alterar até o início da Copa.
+        {locked ? (
+          <>
+            <Icon name="lock" size={16} className="text-gold" />
+            As apostas estão temporariamente travadas pela administração.
+          </>
+        ) : (
+          <>
+            <Icon name="checkCircle" size={16} className="text-grass-400" />
+            Palpites salvos automaticamente. Você pode alterar até o início da Copa.
+          </>
+        )}
       </div>
     </div>
   );

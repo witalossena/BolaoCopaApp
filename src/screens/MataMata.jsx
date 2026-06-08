@@ -64,17 +64,19 @@ function assignThirds(qualifyingGroups) {
 const ROUND_NAMES = ["16avos", "Oitavas", "Quartas", "Semifinal", "Final"];
 const ALL_GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 
-function BracketSlot({ name, picked, onClick, dim }) {
+function BracketSlot({ name, picked, onClick, dim, disabled = false }) {
   return (
-    <button onClick={onClick} disabled={!name}
+    <button onClick={onClick} disabled={!name || disabled}
       className={`w-full flex items-center gap-2 px-2.5 h-9 rounded-md border text-left transition
         ${!name
           ? "border-dashed border-edge/60 text-mute2 cursor-default"
           : picked
             ? "bg-grass-dim border-grass/50"
-            : "bg-bg/50 border-edge hover:border-grass/50 hover:bg-surface2"}`}>
+            : disabled
+              ? "bg-bg/30 border-edge/50 text-mute cursor-not-allowed"
+              : "bg-bg/50 border-edge hover:border-grass/50 hover:bg-surface2"}`}>
       {name
-        ? <TeamBadge name={name} size="sm" dim={dim && !picked} />
+        ? <TeamBadge name={name} size="sm" dim={(dim && !picked) || (disabled && !picked)} />
         : <span className="font-cond text-xs text-mute2">a definir</span>}
     </button>
   );
@@ -89,7 +91,7 @@ function getExternalId(round, m) {
   return null;
 }
 
-export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, koScores = {}, setKoScores = () => {}, thirds = {}, setThirds = () => {}, onReset, tournamentPhase = "GroupStage" }) {
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, koScores = {}, setKoScores = () => {}, thirds = {}, setThirds = () => {}, onReset, tournamentPhase = "GroupStage", locked = false }) {
   const ROUNDS = 5;
 
   // Qualifying groups: groups where the user has picked a 3rd-place team
@@ -252,6 +254,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
                   value={selected}
                   placeholder="3º lugar..."
                   onChange={e => pickThird(g, e.target.value)}
+                  disabled={locked}
                 >
                   {options.map(t => <option key={t} value={t}>{t}</option>)}
                 </Select>
@@ -274,7 +277,8 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
             <div className="font-display text-2xl text-gold-400">{champion}</div>
           </div>
           <button onClick={() => { setWinners({}); setKoScores({}); onReset?.(); predictionService.clearKnockoutPredictions().catch(console.error); }}
-            className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5" type="button">
+            disabled={locked}
+            className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" type="button">
             <Icon name="refresh" size={15} />Recomeçar
           </button>
         </Card>
@@ -293,25 +297,27 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
                   const w = winners[`${round}-${m}`];
                   return (
                     <div key={m} className="bg-surface2/50 border border-edge rounded-lg p-1.5 space-y-1">
-                      <BracketSlot name={t1} picked={w === t1} dim={!!w} onClick={() => pick(round, m, t1)} />
+                      <BracketSlot name={t1} picked={w === t1} dim={!!w} onClick={() => pick(round, m, t1)} disabled={locked} />
                       {w && (
                         <div className="flex items-center justify-center gap-1 py-0.5">
                           <input type="number" min="0" max="20"
                             value={koScores[`${round}-${m}`]?.h ?? ""}
                             onChange={e => handleKoScore(round, m, "h", e.target.value)}
                             onBlur={() => submitKoScore(round, m)}
+                            disabled={locked}
                             placeholder="0"
-                            className="w-8 h-6 text-center text-xs font-bold rounded border bg-bg/70 border-edge text-cream focus:border-grass outline-none" />
+                            className="w-8 h-6 text-center text-xs font-bold rounded border bg-bg/70 border-edge text-cream focus:border-grass outline-none disabled:opacity-60" />
                           <span className="text-mute2 text-xs">×</span>
                           <input type="number" min="0" max="20"
                             value={koScores[`${round}-${m}`]?.a ?? ""}
                             onChange={e => handleKoScore(round, m, "a", e.target.value)}
                             onBlur={() => submitKoScore(round, m)}
+                            disabled={locked}
                             placeholder="0"
-                            className="w-8 h-6 text-center text-xs font-bold rounded border bg-bg/70 border-edge text-cream focus:border-grass outline-none" />
+                            className="w-8 h-6 text-center text-xs font-bold rounded border bg-bg/70 border-edge text-cream focus:border-grass outline-none disabled:opacity-60" />
                         </div>
                       )}
-                      <BracketSlot name={t2} picked={w === t2} dim={!!w} onClick={() => pick(round, m, t2)} />
+                      <BracketSlot name={t2} picked={w === t2} dim={!!w} onClick={() => pick(round, m, t2)} disabled={locked} />
                     </div>
                   );
                 })}

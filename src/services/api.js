@@ -177,6 +177,12 @@ export const adminService = {
       headers: { 'Content-Type': 'application/json' }
     });
     return response.data;
+  },
+  lockAllPredictions: async (isLocked) => {
+    const response = await api.patch('/admin/tournament/lock-predictions', isLocked, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
   }
 };
 

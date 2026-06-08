@@ -11,10 +11,10 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { Select } from '../components/ui/Select';
 import { TEAMS } from '../data';
 
-function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }) {
+function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {}, globalLocked = false }) {
   const apiStatus = matchStatuses[match.id];
   const effectiveStatus = apiStatus || match.status;
-  const locked = effectiveStatus === "locked";
+  const locked = globalLocked || effectiveStatus === "locked";
   const soon = !locked && effectiveStatus === "soon";
   const homeRef = useRef();
   const awayRef = useRef();
@@ -101,7 +101,7 @@ const POSITIONS = [
   { key: "fourth", label: "4º lugar", icon: "shield", colorCls: "text-mute2",      tone: "mute"   },
 ];
 
-function GroupRanks({ group, ranks, setRank }) {
+function GroupRanks({ group, ranks, setRank, locked = false }) {
   const r = ranks[group.id] || {};
 
   const getOpts = (currentKey) => {
@@ -136,7 +136,7 @@ function GroupRanks({ group, ranks, setRank }) {
             </span>
             <PointPill pts={20} tone={tone} />
           </div>
-          <Select value={r[key] || ""} placeholder="Quem se classifica?"
+          <Select value={r[key] || ""} placeholder="Quem se classifica?" disabled={locked}
             onChange={e => handleChange(key, e.target.value)}>
             {getOpts(key)}
           </Select>
@@ -179,7 +179,7 @@ function buildWhatsAppText(scores, ranks) {
   return lines.join("\n").trim();
 }
 
-export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {}, matchIdMap = {} }) {
+export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {}, matchIdMap = {}, locked = false }) {
   const [active, setActive] = useState("A");
   const group = GROUPS.find(g => g.id === active);
   const idx = GROUP_ORDER.indexOf(active);
@@ -264,7 +264,7 @@ export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {},
         <div className="divide-y divide-edge/40 mt-2">
           {group.matches.map(m => (
             <MatchRow key={m.id} match={m} score={scores[m.id]}
-              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />
+              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} matchIdMap={matchIdMap} globalLocked={locked} />
           ))}
         </div>
 
@@ -273,8 +273,17 @@ export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {},
 
       <div className="flex items-center justify-between mt-5 gap-3 flex-wrap">
         <p className="text-mute2 text-sm flex items-center gap-2">
-          <Icon name="checkCircle" size={16} className="text-grass-400" />
-          Seus palpites são salvos automaticamente.
+          {locked ? (
+            <>
+              <Icon name="lock" size={16} className="text-gold" />
+              As apostas estão temporariamente travadas pela administração.
+            </>
+          ) : (
+            <>
+              <Icon name="checkCircle" size={16} className="text-grass-400" />
+              Seus palpites são salvos automaticamente.
+            </>
+          )}
         </p>
         <Button variant="secondary" iconRight="arrowRight"
           onClick={() => setActive(GROUP_ORDER[(idx + 1) % 12])}>
