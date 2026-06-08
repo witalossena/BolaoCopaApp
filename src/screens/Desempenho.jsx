@@ -97,7 +97,10 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
     try { await onClearAll?.(); } finally { setClearing(false); setClearConfirm(false); }
   };
 
+  const hasAnyPrediction = matchPredictions.length > 0 || knockoutPredictions.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0;
+
   const handleDownloadPDF = async () => {
+    if (!hasAnyPrediction) return;
     setDownloading(true);
     try {
       const element = document.getElementById('pdf-export-layout-container');
@@ -130,10 +133,10 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
   return (
-    <div ref={dashboardRef} className="bg-bg p-2 sm:p-4 rounded-3xl">
+    <div ref={dashboardRef} className="bg-bg p-2 sm:p-4 rounded-3xl text-left">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
         <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`} className="mb-0">Meu Desempenho</PageTitle>
-        <Button variant="secondary" icon="download" disabled={downloading} onClick={handleDownloadPDF}>
+        <Button variant="secondary" icon="download" disabled={downloading || !hasAnyPrediction} onClick={handleDownloadPDF}>
           {downloading ? "Gerando PDF..." : "Baixar Palpites (PDF)"}
         </Button>
       </div>
@@ -141,7 +144,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <BigStat icon="zap" value={total} label="Pontos totais acumulados" />
         <BigStat icon="trophy" value={`${pos > 0 ? pos : '-'}º`} label={`Posição entre ${ranking.length} participantes`} tone="gold" />
-        <Card className="flex items-center justify-center">
+        <Card className="flex items-center justify-center text-center">
           <Ring value={Math.round(pts.exactRate * 100) || 0} label="PLACARES EXATOS" />
         </Card>
       </div>
@@ -169,62 +172,60 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
 
         <Card accent>
           <SectionLabel icon="target">Resumo</SectionLabel>
-          <div className="space-y-3">
-            {[
-              ["Placares exatos acertados", `${pts.exactCount}`, "ball"],
-              ["Distância para o líder", distance, "arrowUpRight"],
-            ].map(([l, v, ic]) => (
-              <div key={l} className="flex items-center justify-between py-2 border-b border-edge/50 last:border-0">
-                <span className="flex items-center gap-2.5 text-mute text-sm">
-                  <Icon name={ic} size={16} className="text-mute2" />{l}
-                </span>
-                <span className="font-cond font-bold text-cream">{v}</span>
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-mute">
+                <Icon name="ball" size={18} />
+                <span className="font-cond font-semibold text-sm">Placares exatos acertados</span>
               </div>
-            ))}
-
-            {bestPred && (
-              <div className="flex items-start justify-between py-2 border-t border-edge/50">
-                <span className="flex items-center gap-2.5 text-mute text-sm">
-                  <Icon name="star" size={16} className="text-gold" />Melhor palpite
-                </span>
-                <div className="text-right">
-                  <div className="font-cond font-bold text-cream text-sm">
-                    {bestPred.homeTeam} {bestPred.predictedHome}×{bestPred.predictedAway} {bestPred.awayTeam}
-                  </div>
-                  <div className="font-cond text-gold text-xs">{bestPred.points} pts</div>
-                </div>
+              <span className="font-display text-xl text-cream">{pts.exactCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-mute">
+                <Icon name="trendingUp" size={18} />
+                <span className="font-cond font-semibold text-sm">Distância para o líder</span>
               </div>
-            )}
+              <span className="font-display text-xl text-cream">{distance}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-mute">
+                <Icon name="star" size={18} />
+                <span className="font-cond font-semibold text-sm">Melhor palpite</span>
+              </div>
+              <div className="text-right">
+                {bestPred ? (
+                  <>
+                    <div className="font-cond font-bold text-xs text-cream leading-tight">
+                      {bestPred.homeTeam} {bestPred.predictedHome}×{bestPred.predictedAway} {bestPred.awayTeam}
+                    </div>
+                    <div className="text-gold font-cond font-bold text-[10px] uppercase">{bestPred.points} pts</div>
+                  </>
+                ) : <span className="text-mute2 text-sm">–</span>}
+              </div>
+            </div>
+            <Button variant="secondary" className="w-full" iconRight="arrowRight" onClick={() => setView("ranking")}>
+              Ver ranking completo
+            </Button>
           </div>
-          <Button variant="secondary" className="w-full mt-5" iconRight="arrowRight" onClick={() => setView("ranking")}>
-            Ver ranking completo
-          </Button>
         </Card>
       </div>
 
-      <Card className="border-danger/30 bg-danger/5 mb-6">
-        <SectionLabel icon="alert">Zona de perigo</SectionLabel>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+      <Card className="border-danger/20 bg-danger/5">
+        <SectionLabel icon="alert" className="text-danger">Zona de perigo</SectionLabel>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="font-cond font-semibold text-cream text-sm">Limpar todos os palpites</div>
-            <div className="font-cond text-mute2 text-xs mt-0.5">Remove placares, classificações, mata-mata e especiais. Irreversível.</div>
+            <div className="font-cond font-bold text-cream">Limpar todos os palpites</div>
+            <p className="text-mute2 text-xs">Remove placares, classificações, mata-mata e especiais. Irreversível.</p>
           </div>
-          {!clearConfirm ? (
-            <button onClick={() => setClearConfirm(true)}
-              className="shrink-0 font-cond font-semibold text-sm px-4 h-9 rounded-xl border border-danger/50 text-danger hover:bg-danger/10 transition">
-              Limpar tudo
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => setClearConfirm(false)}
-                className="font-cond text-sm px-3 h-9 rounded-xl border border-edge text-mute hover:text-cream transition">
-                Cancelar
-              </button>
-              <button onClick={handleClearAll} disabled={clearing}
-                className="font-cond font-bold text-sm px-4 h-9 rounded-xl bg-danger/90 hover:bg-danger text-white transition disabled:opacity-50">
-                {clearing ? "Limpando..." : "Confirmar reset"}
-              </button>
+          {clearConfirm ? (
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setClearConfirm(false)}>Cancelar</Button>
+              <Button variant="danger" size="sm" onClick={handleClearAll} disabled={clearing}>
+                {clearing ? "Limpando..." : "Confirmar exclusão"}
+              </Button>
             </div>
+          ) : (
+            <Button variant="danger" outline size="sm" onClick={() => setClearConfirm(true)}>Limpar tudo</Button>
           )}
         </div>
       </Card>
@@ -234,7 +235,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
           <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
 
           {history.length > 0 && (
-            <div className="divide-y divide-edge/40 mb-6">
+            <div className="divide-y divide-edge/40 mb-6 text-left">
               <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Jogos Encerrados</div>
               {history.map((item, i) => {
                 const tone = ptsTone(item.points);
@@ -268,7 +269,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
           )}
 
           {(matchPredictions.length > 0 || knockoutPredictions.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0) && (
-            <div className={`${history.length > 0 ? "pt-4 border-t border-edge/40" : ""} space-y-6`}>
+            <div className={`${history.length > 0 ? "pt-4 border-t border-edge/40" : ""} space-y-6 text-left`}>
               
               {matchPredictions.length > 0 && (
                 <div>
