@@ -11,7 +11,8 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
   const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
   const premiumUsers = ranking.filter(u => u.isPaid);
-  const totalArrecadado = prizePool;
+  const fee = 0.05;
+  const netPrizePool = prizePool * (1 - fee);
   
   const displayRanking = mode === "premium" ? premiumUsers : ranking;
 
@@ -19,7 +20,7 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
     { label: "1º Lugar", pct: 0.70 },
     { label: "2º Lugar", pct: 0.15 },
     { label: "3º Lugar", pct: 0.10 }
-  ].map(p => ({ ...p, value: totalArrecadado * p.pct }));
+  ].map(p => ({ ...p, value: netPrizePool * p.pct }));
 
   if (!ranking || ranking.length === 0) {
     return (
@@ -68,8 +69,8 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
               <span className="font-cond font-bold text-gold-400 text-xs tracking-[0.2em] uppercase">Grande Premiação em Jogo</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-display text-cream drop-shadow-sm">{fmtBRL(totalArrecadado)}</span>
-              <span className="text-mute2 font-cond text-sm uppercase tracking-widest">Total Arrecadado</span>
+              <span className="text-4xl sm:text-5xl font-display text-cream drop-shadow-sm">{fmtBRL(netPrizePool)}</span>
+              <span className="text-mute2 font-cond text-sm uppercase tracking-widest text-balance">Premiação Total Disponível</span>
             </div>
           </div>
 
