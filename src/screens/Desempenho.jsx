@@ -6,6 +6,7 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { SectionLabel } from '../components/ui/SectionLabel';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { predictionService } from '../services/api';
+import { SPECIAL_FIELDS } from '../data';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -48,7 +49,7 @@ function ptsTone(pts) {
   return { bg: "bg-danger/10 text-danger border-danger/20", label: "Errou" };
 }
 
-export function Desempenho({ user, ranking, setView, onClearAll }) {
+export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }) {
   const [history, setHistory] = useState([]);
   const [groupRanks, setGroupRanks] = useState([]);
   const [clearConfirm, setClearConfirm] = useState(false);
@@ -172,12 +173,12 @@ export function Desempenho({ user, ranking, setView, onClearAll }) {
         </div>
       </Card>
 
-      {(history.length > 0 || groupRanks.length > 0) && (
+      {(history.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0) && (
         <Card accent className="mt-6">
           <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
 
           {history.length > 0 && (
-            <div className="divide-y divide-edge/40">
+            <div className="divide-y divide-edge/40 mb-4">
               {history.map((item, i) => {
                 const tone = ptsTone(item.points);
                 return (
@@ -209,28 +210,58 @@ export function Desempenho({ user, ranking, setView, onClearAll }) {
             </div>
           )}
 
-          {groupRanks.length > 0 && (
-            <div className={`${history.length > 0 ? "mt-4 pt-4 border-t border-edge/40" : ""}`}>
-              <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
-              <div className="space-y-2">
-                {groupRanks.map(g => {
-                  const tone = ptsTone(g.points || 0);
-                  return (
-                    <div key={g.group} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2">
-                      <span className="font-display text-cream w-5 shrink-0 text-sm">{g.group}</span>
-                      <div className="flex-1 font-cond text-xs text-cream space-y-0.5 min-w-0">
-                        <div className="truncate">1º {g.firstTeam} · 2º {g.secondTeam}</div>
-                        {(g.thirdTeam || g.fourthTeam) && (
-                          <div className="truncate text-mute2">3º {g.thirdTeam || '–'} · 4º {g.fourthTeam || '–'}</div>
-                        )}
-                      </div>
-                      <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
-                        {(g.points || 0) > 0 ? `+${g.points}` : "–"} pts
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+          {(groupRanks.length > 0 || Object.keys(specials).length > 0) && (
+            <div className={`${history.length > 0 ? "pt-4 border-t border-edge/40" : ""}`}>
+              {groupRanks.length > 0 && (
+                <>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
+                  <div className="space-y-2 mb-4">
+                    {groupRanks.map(g => {
+                      const tone = ptsTone(g.points || 0);
+                      return (
+                        <div key={g.group} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2">
+                          <span className="font-display text-cream w-5 shrink-0 text-sm">{g.group}</span>
+                          <div className="flex-1 font-cond text-xs text-cream space-y-0.5 min-w-0">
+                            <div className="truncate">1º {g.firstTeam} · 2º {g.secondTeam}</div>
+                            {(g.thirdTeam || g.fourthTeam) && (
+                              <div className="truncate text-mute2">3º {g.thirdTeam || '–'} · 4º {g.fourthTeam || '–'}</div>
+                            )}
+                          </div>
+                          <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
+                            {(g.points || 0) > 0 ? `+${g.points}` : "–"} pts
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {Object.keys(specials).length > 0 && (
+                <>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Pódio & Premiações</div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {SPECIAL_FIELDS.map(f => {
+                      const val = specials[f.key];
+                      if (!val) return null;
+                      return (
+                        <div key={f.key} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2">
+                          <span className="text-gold shrink-0">
+                            <Icon name={f.kind === "team" ? "shield" : "star"} size={14} />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-cond text-[10px] text-mute2 uppercase tracking-wider leading-none mb-1">{f.label}</div>
+                            <div className="font-cond font-bold text-xs text-cream truncate">{val}</div>
+                          </div>
+                          <span className="shrink-0 font-cond font-bold text-mute2 text-[10px] px-2 py-0.5 rounded-full border border-edge/40">
+                            – pts
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </Card>
