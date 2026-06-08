@@ -64,13 +64,13 @@ function UserPredictionsModal({ user, matches, onClose }) {
                   {predictions.matchPredictions.map(p => {
                     const m = matchMap[p.externalId];
                     return (
-                      <div key={p.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div key={p.externalId} className="flex items-center gap-2 bg-surface2 rounded-xl px-4 py-2.5">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
                           <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
                         </div>
-                        <span className="font-display text-cream text-sm mx-3 shrink-0">{p.homeScore} × {p.awayScore}</span>
-                        <div className="flex items-center gap-2 min-w-0 justify-end">
+                        <span className="font-display text-cream text-sm shrink-0 w-14 text-center">{p.homeScore} × {p.awayScore}</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
                           <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
                           {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
                         </div>
@@ -86,18 +86,16 @@ function UserPredictionsModal({ user, matches, onClose }) {
                 <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
                 <div className="space-y-1.5">
                   {predictions.groupRanks.map(g => (
-                    <div key={g.group} className="bg-surface2 rounded-xl px-4 py-2.5 space-y-0.5">
-                      <div className="flex items-center gap-3">
-                        <span className="font-display text-cream w-5 shrink-0">{g.group}</span>
-                        <div className="font-cond text-sm text-cream">1º {g.firstTeam}</div>
-                        <div className="font-cond text-sm text-mute2 ml-auto">2º {g.secondTeam}</div>
+                    <div key={g.group} className="bg-surface2 rounded-xl px-4 py-2.5 flex items-start gap-3">
+                      <span className="font-display text-cream w-5 shrink-0 mt-0.5">{g.group}</span>
+                      <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-0.5">
+                        <div className="font-cond text-sm text-cream truncate">1º {g.firstTeam}</div>
+                        <div className="font-cond text-sm text-mute2 truncate text-right">2º {g.secondTeam}</div>
+                        {(g.thirdTeam || g.fourthTeam) && <>
+                          <div className="font-cond text-xs text-mute2 truncate">3º {g.thirdTeam || '–'}</div>
+                          <div className="font-cond text-xs text-mute2 truncate text-right">4º {g.fourthTeam || '–'}</div>
+                        </>}
                       </div>
-                      {(g.thirdTeam || g.fourthTeam) && (
-                        <div className="flex items-center gap-3 pl-8">
-                          <div className="font-cond text-xs text-mute2">3º {g.thirdTeam || '–'}</div>
-                          <div className="font-cond text-xs text-mute2 ml-auto">4º {g.fourthTeam || '–'}</div>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
