@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { TOTAL_MATCHES, GROUP_ORDER } from '../data';
+import { TOTAL_MATCHES, GROUP_ORDER, GROUPS } from '../data';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { PageTitle } from '../components/ui/PageTitle';
+import { Select } from '../components/ui/Select';
 import { matchService, adminService } from '../services/api';
 
 function AdminTile({ icon, value, label, tone }) {
@@ -130,10 +131,20 @@ export function Admin({ allUsers, togglePaid }) {
   const [localScores, setLocalScores] = useState({});
   const [savingMatch, setSavingMatch] = useState(null);
   const [lockingMatch, setLockingMatch] = useState(null);
-  const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "matamata"
+  const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "classificacao" | "matamata"
+  const [groupResults, setGroupResults] = useState({});
+  const [savingGroupResult, setSavingGroupResult] = useState(null);
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
+
+  useEffect(() => {
+    adminService.getGroupResults().then(data => {
+      const map = {};
+      data.forEach(r => { map[r.group] = { first: r.firstTeam, second: r.secondTeam, third: r.thirdTeam || "", fourth: r.fourthTeam || "" }; });
+      setGroupResults(map);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     matchService.getMatches().then(data => {
@@ -192,6 +203,36 @@ export function Admin({ allUsers, togglePaid }) {
     } finally {
       setBusy(null);
     }
+  };
+
+  const handleCalculateGroups = async () => {
+    setBusy("calcGroups");
+    try {
+      await adminService.calculateGroupScores();
+      showToast("Pontuação de grupos calculada.");
+    } catch {
+      showToast("Erro ao calcular pontuação de grupos.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveGroupResult = async (groupId) => {
+    const r = groupResults[groupId];
+    if (!r?.first || !r?.second) return;
+    setSavingGroupResult(groupId);
+    try {
+      await adminService.setGroupResult(groupId, r.first, r.second, r.third || null, r.fourth || null);
+      showToast(`Resultado do Grupo ${groupId} salvo.`);
+    } catch {
+      showToast("Erro ao salvar resultado.");
+    } finally {
+      setSavingGroupResult(null);
+    }
+  };
+
+  const setGroupResult = (groupId, key, val) => {
+    setGroupResults(prev => ({ ...prev, [groupId]: { ...(prev[groupId] || {}), [key]: val } }));
   };
 
   const saveResult = async (matchId) => {
@@ -282,12 +323,15 @@ export function Admin({ allUsers, togglePaid }) {
         <AdminTile icon="ball"   value={TOTAL_MATCHES} label="JOGOS NO BANCO" />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3 mb-6">
+      <div className="grid sm:grid-cols-3 gap-3 mb-6">
         <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
           {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
         <Button variant="primary" size="lg" icon="calculator" disabled={!!busy} onClick={handleCalculate}>
           {busy === "calc" ? "Calculando..." : "Calcular Pontuações"}
+        </Button>
+        <Button variant="secondary" size="lg" icon="users" disabled={!!busy} onClick={handleCalculateGroups}>
+          {busy === "calcGroups" ? "Calculando..." : "Calcular Grupos"}
         </Button>
       </div>
 
@@ -297,14 +341,14 @@ export function Admin({ allUsers, togglePaid }) {
           <span className="font-cond text-mute2 text-sm">{launchedCount}/{matches.length} lançados</span>
         </div>
 
-        <div className="px-5 py-3 border-b border-edge flex gap-2">
-          {["grupos", "matamata"].map(tab => (
+        <div className="px-5 py-3 border-b border-edge flex gap-2 flex-wrap">
+          {[["grupos", "Fase de Grupos"], ["classificacao", "Classificação"], ["matamata", "Mata-Mata"]].map(([tab, label]) => (
             <button key={tab} onClick={() => setResultTab(tab)}
               className={`px-4 h-8 rounded-xl font-cond font-bold text-sm border transition-all
                 ${resultTab === tab
                   ? "bg-grass text-bg border-grass"
                   : "bg-surface2 text-mute border-edge hover:text-cream hover:border-edge2"}`}>
-              {tab === "grupos" ? "Fase de Grupos" : "Mata-Mata"}
+              {label}
             </button>
           ))}
         </div>
@@ -380,6 +424,48 @@ export function Admin({ allUsers, togglePaid }) {
             })}
           </div>
         </>)}
+
+        {resultTab === "classificacao" && (
+          <div className="divide-y divide-edge/40">
+            <div className="px-5 py-3 bg-surface2/30 font-cond text-xs text-mute2">
+              Registre o resultado final de cada grupo (1º ao 4º) para calcular a pontuação dos palpites de classificação.
+            </div>
+            {GROUP_ORDER.map(gId => {
+              const group = GROUPS.find(g => g.id === gId);
+              const r = groupResults[gId] || {};
+              const teams = group?.teams || [];
+              const getOpts = (currentKey) => {
+                const taken = ["first","second","third","fourth"].filter(k => k !== currentKey).map(k => r[k]).filter(Boolean);
+                return teams.filter(t => !taken.includes(t));
+              };
+              const canSave = r.first && r.second && savingGroupResult !== gId;
+              const saved = r.first && r.second;
+              return (
+                <div key={gId} className="px-5 py-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="font-display text-grass-400 text-lg">Grupo {gId}</span>
+                    {saved && <span className="font-cond text-xs text-grass-400 flex items-center gap-1"><Icon name="checkCircle" size={13} />Salvo</span>}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                    {[["first","1º"], ["second","2º"], ["third","3º"], ["fourth","4º"]].map(([key, label]) => (
+                      <div key={key}>
+                        <div className="font-cond text-xs text-mute2 mb-1">{label} lugar</div>
+                        <Select value={r[key] || ""} placeholder="Selecionar..."
+                          onChange={e => setGroupResult(gId, key, e.target.value)}>
+                          {getOpts(key).map(t => <option key={t} value={t}>{t}</option>)}
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                  <Button size="sm" variant={saved ? "secondary" : "primary"} disabled={!canSave}
+                    onClick={() => saveGroupResult(gId)}>
+                    {savingGroupResult === gId ? "..." : saved ? "Atualizar" : "Salvar"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {resultTab === "matamata" && (
           <div className="divide-y divide-edge/30">
