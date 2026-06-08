@@ -56,25 +56,36 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
           : "Todos os participantes do bolão, em uma única tabela. Pontos de grupos + pódio & premiações."}
       </p>
 
-      {mode === "premium" && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-          <Card className="sm:col-span-1 bg-surface2/40 border-edge/60">
-            <div className="text-mute font-cond text-xs tracking-widest uppercase mb-1">Total Arrecadado</div>
-            <div className="text-2xl font-display text-cream">{fmtBRL(totalArrecadado)}</div>
-          </Card>
-          <div className="sm:col-span-3 grid grid-cols-3 gap-3">
+      <Card className="mb-8 border-gold/30 bg-gradient-to-br from-gold/20 via-transparent to-transparent overflow-hidden relative group">
+        <div className="absolute right-0 top-0 bottom-0 w-32 pointer-events-none opacity-10 group-hover:opacity-20 transition-opacity">
+          <Icon name="trophy" size={140} className="text-gold -mr-10 -mt-2" />
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-gold shrink-0"><Icon name="sparkles" size={16} /></span>
+              <span className="font-cond font-bold text-gold-400 text-xs tracking-[0.2em] uppercase">Grande Premiação em Jogo</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl sm:text-5xl font-display text-cream drop-shadow-sm">{fmtBRL(totalArrecadado)}</span>
+              <span className="text-mute2 font-cond text-sm uppercase tracking-widest">Total Arrecadado</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 flex-1 sm:max-w-md">
             {prizes.map((p, i) => (
-              <Card key={p.label} className="bg-bg/40 border-edge/40">
-                <div className="flex items-center gap-2 mb-1">
-                  <span style={{ color: medal[i] }}><Icon name="trophy" size={14} /></span>
-                  <span className="text-mute2 font-cond text-[10px] tracking-widest uppercase">{p.label}</span>
+              <div key={p.label} className="bg-bg/60 border border-edge/60 rounded-xl p-2.5 sm:p-3 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                  <span style={{ color: medal[i] }} className="shrink-0"><Icon name="trophy" size={12} /></span>
+                  <span className="text-mute2 font-cond text-[9px] sm:text-[10px] tracking-wider uppercase truncate">{p.label}</span>
                 </div>
-                <div className="text-lg font-display text-cream leading-none">{fmtBRL(p.value)}</div>
-              </Card>
+                <div className="text-sm sm:text-base font-display text-cream leading-none">{fmtBRL(p.value)}</div>
+              </div>
             ))}
           </div>
         </div>
-      )}
+      </Card>
 
       <Card pad={false} className="overflow-hidden">
         <div className="grid items-center px-4 sm:px-5 py-3 border-b border-edge bg-surface2/60 grid-cols-[44px_1fr_80px_110px] sm:grid-cols-[56px_1fr_90px_96px_110px]">
