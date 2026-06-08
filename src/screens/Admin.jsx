@@ -141,6 +141,7 @@ export function Admin({ allUsers, togglePaid }) {
   const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "classificacao" | "matamata"
   const [groupResults, setGroupResults] = useState({});
   const [savingGroupResult, setSavingGroupResult] = useState(null);
+  const [resettingGroup, setResettingGroup] = useState(null);
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
@@ -240,6 +241,19 @@ export function Admin({ allUsers, togglePaid }) {
 
   const setGroupResult = (groupId, key, val) => {
     setGroupResults(prev => ({ ...prev, [groupId]: { ...(prev[groupId] || {}), [key]: val } }));
+  };
+
+  const resetGroupResult = async (groupId) => {
+    setResettingGroup(groupId);
+    try {
+      await adminService.resetGroupResult(groupId);
+      setGroupResults(prev => ({ ...prev, [groupId]: {} }));
+      showToast(`Classificação do Grupo ${groupId} removida.`);
+    } catch {
+      showToast("Erro ao resetar classificação.");
+    } finally {
+      setResettingGroup(null);
+    }
   };
 
   const resetResult = async (matchId) => {
@@ -487,10 +501,19 @@ export function Admin({ allUsers, togglePaid }) {
                       </div>
                     ))}
                   </div>
-                  <Button size="sm" variant={saved ? "secondary" : "primary"} disabled={!canSave}
-                    onClick={() => saveGroupResult(gId)}>
-                    {savingGroupResult === gId ? "..." : saved ? "Atualizar" : "Salvar"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant={saved ? "secondary" : "primary"} disabled={!canSave}
+                      onClick={() => saveGroupResult(gId)}>
+                      {savingGroupResult === gId ? "..." : saved ? "Atualizar" : "Salvar"}
+                    </Button>
+                    {saved && (
+                      <button onClick={() => resetGroupResult(gId)} disabled={resettingGroup === gId}
+                        title="Remover classificação"
+                        className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                        <Icon name="x" size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

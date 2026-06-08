@@ -154,6 +154,10 @@ export const adminService = {
   resetMatchResult: async (matchId) => {
     const response = await api.delete(`/admin/matches/${matchId}/result`);
     return response.data;
+  },
+  resetGroupResult: async (group) => {
+    const response = await api.delete(`/admin/group-result/${group}`);
+    return response.data;
   }
 };
 
