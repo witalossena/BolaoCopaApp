@@ -129,7 +129,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid }) {
+export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -349,7 +349,7 @@ export function Admin({ allUsers, togglePaid }) {
         <AdminTile icon="ball"   value={TOTAL_MATCHES} label="JOGOS NO BANCO" />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3 mb-6">
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
         <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
           {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
@@ -357,6 +357,31 @@ export function Admin({ allUsers, togglePaid }) {
           {busy === "calc" ? "Calculando..." : "Calcular Pontuações"}
         </Button>
       </div>
+
+      <Card className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div className="font-cond font-semibold text-cream text-sm">Fase do Torneio</div>
+          <div className="font-cond text-mute2 text-xs mt-0.5">
+            {tournamentPhase === "KnockoutStage" ? "Mata-Mata aberto para palpites" : "Fase de Grupos — Mata-Mata bloqueado"}
+          </div>
+        </div>
+        <Button
+          variant={tournamentPhase === "KnockoutStage" ? "secondary" : "primary"}
+          icon="lock"
+          disabled={!!busy}
+          onClick={async () => {
+            const next = tournamentPhase === "KnockoutStage" ? "GroupStage" : "KnockoutStage";
+            setBusy("phase");
+            try {
+              await adminService.setTournamentPhase(next);
+              setTournamentPhase(next);
+              showToast(next === "KnockoutStage" ? "Mata-Mata aberto!" : "Mata-Mata bloqueado.");
+            } catch { showToast("Erro ao alterar fase."); }
+            finally { setBusy(null); }
+          }}>
+          {busy === "phase" ? "..." : tournamentPhase === "KnockoutStage" ? "Bloquear Mata-Mata" : "Abrir Mata-Mata"}
+        </Button>
+      </Card>
 
       <Card pad={false} className="overflow-hidden mb-6">
         <div className="px-5 py-3.5 border-b border-edge flex items-center justify-between">

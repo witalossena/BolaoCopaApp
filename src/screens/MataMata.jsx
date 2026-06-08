@@ -89,7 +89,7 @@ function getExternalId(round, m) {
   return null;
 }
 
-export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, koScores = {}, setKoScores = () => {}, thirds = {}, setThirds = () => {}, onReset }) {
+export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners, koScores = {}, setKoScores = () => {}, thirds = {}, setThirds = () => {}, onReset, tournamentPhase = "GroupStage" }) {
   const ROUNDS = 5;
 
   // Qualifying groups: groups where the user has picked a 3rd-place team
@@ -190,6 +190,23 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
   const champion = winners[`${ROUNDS - 1}-0`];
   const missingGroups = ALL_GROUPS.filter(g => !ranks[g]?.first || !ranks[g]?.second);
   const thirdsCount = qualifyingGroups.length;
+
+  if (tournamentPhase === "GroupStage" || tournamentPhase === "PreTournament") {
+    return (
+      <div>
+        <PageTitle kicker="Fase eliminatória">Mata-Mata</PageTitle>
+        <Card className="flex flex-col items-center justify-center py-16 gap-4 text-center border-edge/60">
+          <div className="w-14 h-14 rounded-2xl bg-surface2 border border-edge grid place-items-center text-mute2">
+            <Icon name="lock" size={28} />
+          </div>
+          <div>
+            <div className="font-display text-lg text-cream mb-1">Fase de Grupos em andamento</div>
+            <div className="font-cond text-mute2 text-sm max-w-xs">Os palpites do Mata-Mata serão liberados após o encerramento da fase de grupos.</div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

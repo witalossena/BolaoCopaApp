@@ -9,7 +9,7 @@ import { MataMata } from './screens/MataMata';
 import { Ranking } from './screens/Ranking';
 import { Desempenho } from './screens/Desempenho';
 import { Admin } from './screens/Admin';
-import { rankingService, authService, adminService, matchService, predictionService } from './services/api';
+import { rankingService, authService, adminService, matchService, predictionService, tournamentService } from './services/api';
 
 const STORE_KEY = "bolao2026_v1";
 
@@ -60,10 +60,15 @@ export default function App() {
   const [koWinners, setKoWinners] = useState(saved.koWinners || {});
   const [koScores, setKoScores] = useState(saved.koScores || {});
   const [thirds, setThirds] = useState(saved.thirds || {});
+  const [tournamentPhase, setTournamentPhase] = useState("GroupStage");
 
   useEffect(() => {
     localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores }));
   }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores]);
+
+  useEffect(() => {
+    tournamentService.getPhase().then(setTournamentPhase).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchRanking = async () => {
@@ -247,11 +252,11 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} onClearAll={handleClearAll} />; break;
     case "regras":     screen = <Regras />; break;
-    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} />; break;
+    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
   }
 

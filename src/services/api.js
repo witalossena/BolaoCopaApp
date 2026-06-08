@@ -102,6 +102,13 @@ export const rankingService = {
   }
 };
 
+export const tournamentService = {
+  getPhase: async () => {
+    const response = await api.get('/tournament/phase');
+    return response.data;
+  }
+};
+
 export const adminService = {
   getStats: async () => {
     const response = await api.get('/admin/stats');
@@ -157,6 +164,12 @@ export const adminService = {
   },
   resetGroupResult: async (group) => {
     const response = await api.delete(`/admin/group-result/${group}`);
+    return response.data;
+  },
+  setTournamentPhase: async (phase) => {
+    const response = await api.patch('/admin/tournament/phase', JSON.stringify(phase), {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   }
 };
