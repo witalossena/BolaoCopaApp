@@ -77,39 +77,23 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
       )}
 
       <Card pad={false} className="overflow-hidden">
-        <div className={`grid items-center px-4 sm:px-5 py-3 border-b border-edge bg-surface2/60
-          ${mode === "premium" 
-            ? "grid-cols-[44px_1fr_80px] sm:grid-cols-[56px_1fr_90px_96px_110px]" 
-            : "grid-cols-[44px_1fr_72px] sm:grid-cols-[56px_1fr_90px_90px_96px]"}`}>
-          
+        <div className="grid items-center px-4 sm:px-5 py-3 border-b border-edge bg-surface2/60 grid-cols-[44px_1fr_80px_110px] sm:grid-cols-[56px_1fr_90px_96px_96px_110px]">
           <span className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase">#</span>
           <span className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase">Participante</span>
-          
-          {mode === "geral" ? (
-            <>
-              <span className="hidden sm:block font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Grupos</span>
-              <span className="hidden sm:block font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Prêmios</span>
-              <span className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Total</span>
-            </>
-          ) : (
-            <>
-              <span className="hidden sm:block font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Grupos</span>
-              <span className="hidden sm:block font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Total</span>
-              <span className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Premiação</span>
-            </>
-          )}
+          <span className="hidden sm:block font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Grupos</span>
+          <span className="hidden sm:block font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Prêmios</span>
+          <span className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Total</span>
+          <span className="font-cond font-semibold text-mute2 text-xs tracking-widest uppercase text-right">Premiação</span>
         </div>
 
         {displayRanking.map((u, i) => {
           const me = u.handle === currentUser?.handle;
-          const userPrize = mode === "premium" && i < 3 ? prizes[i].value : null;
+          const userPrize = i < 3 ? prizes[i].value : null;
 
           return (
             <div key={u.handle}
               className={`grid items-center px-4 sm:px-5 py-3.5 border-b border-edge/40 last:border-0 transition
-                ${mode === "premium" 
-                  ? "grid-cols-[44px_1fr_80px] sm:grid-cols-[56px_1fr_90px_96px_110px]" 
-                  : "grid-cols-[44px_1fr_72px] sm:grid-cols-[56px_1fr_90px_90px_96px]"}
+                grid-cols-[44px_1fr_80px_110px] sm:grid-cols-[56px_1fr_90px_96px_96px_110px]
                 ${me ? "bg-grass-dim/40" : "hover:bg-surface2/40"}`}>
               <div className="flex items-center">
                 {i < 3 ? (
@@ -134,26 +118,17 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
                   <div className="text-mute2 text-[10px] sm:text-xs truncate">{u.handle}</div>
                 </div>
               </div>
-              
+
               <span className="hidden sm:block text-right font-cond font-semibold text-mute text-sm">{u.groupPts}</span>
-              
-              {mode === "geral" ? (
-                <>
-                  <span className="hidden sm:block text-right font-cond font-semibold text-gold text-sm">{u.specialPts}</span>
-                  <span className="text-right font-display text-grass-400 text-lg">{u.total}</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:block text-right font-display text-cream text-lg">{u.total}</span>
-                  <div className="text-right">
-                    {userPrize ? (
-                      <Badge tone="gold" className="font-display text-[10px] sm:text-[11px] px-1.5 sm:px-2">{fmtBRL(userPrize)}</Badge>
-                    ) : (
-                      <span className="text-mute2 font-cond text-xs">—</span>
-                    )}
-                  </div>
-                </>
-              )}
+              <span className="hidden sm:block text-right font-cond font-semibold text-gold text-sm">{u.specialPts}</span>
+              <span className="text-right font-display text-grass-400 text-lg">{u.total}</span>
+              <div className="text-right">
+                {userPrize ? (
+                  <Badge tone="gold" className="font-display text-[10px] sm:text-[11px] px-1.5 sm:px-2">{fmtBRL(userPrize)}</Badge>
+                ) : (
+                  <span className="text-mute2 font-cond text-xs">—</span>
+                )}
+              </div>
             </div>
           );
         })}
