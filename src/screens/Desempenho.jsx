@@ -7,6 +7,7 @@ import { SectionLabel } from '../components/ui/SectionLabel';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { predictionService } from '../services/api';
 import { SPECIAL_FIELDS, MATCHES } from '../data';
+import { ExportPDFLayout } from '../components/ExportPDFLayout';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -99,13 +100,18 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      const element = dashboardRef.current;
+      const element = document.getElementById('pdf-export-layout-container');
+      element.style.display = 'block';
+
       const canvas = await html2canvas(element, {
-        backgroundColor: '#0a1a0f',
+        backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         logging: false,
       });
+
+      element.style.display = 'none';
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -113,7 +119,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
         format: [canvas.width, canvas.height]
       });
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(`bolao-copa-2026-${user.handle}.pdf`);
+      pdf.save(`meus-palpites-copa-2026-${user.handle}.pdf`);
     } catch (err) {
       console.error("PDF generation failed:", err);
     } finally {
@@ -363,6 +369,16 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
           )}
         </Card>
       )}
+
+      <div id="pdf-export-layout-container" style={{ display: 'none', position: 'absolute', top: 0, left: 0 }}>
+        <ExportPDFLayout 
+          user={user} 
+          matchPredictions={matchPredictions} 
+          groupRanks={groupRanks} 
+          knockoutPredictions={knockoutPredictions} 
+          specials={specials} 
+        />
+      </div>
     </div>
   );
 }
