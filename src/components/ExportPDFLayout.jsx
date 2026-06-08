@@ -61,9 +61,9 @@ export function ExportPDFLayout({ user, matchPredictions, groupRanks, knockoutPr
                       {groupMatches.map(p => {
                         const m = MATCHES.find(mm => mm.id === p.externalId || mm.id === `m${p.matchId}`);
                         return (
-                          <div key={p.id} className="flex items-center justify-between text-[11px] font-medium border-b border-slate-50 last:border-0 pb-1.5 pt-1">
+                          <div key={p.id} className="flex items-center justify-between text-[11px] font-medium border-b border-slate-50 last:border-0 pb-2 pt-1.5">
                             <span className="w-10 text-slate-400 font-bold uppercase">{m.homeCode}</span>
-                            <span className="bg-emerald-50 text-emerald-700 font-black px-3 py-0.5 rounded-md text-xs tabular-nums tracking-tighter inline-flex items-center justify-center min-w-[50px]">{p.homeScore} × {p.awayScore}</span>
+                            <span className="bg-emerald-50 text-emerald-700 font-black px-3 h-6 rounded-md text-xs tabular-nums tracking-tighter flex items-center justify-center min-w-[52px] leading-none">{p.homeScore} × {p.awayScore}</span>
                             <span className="w-10 text-slate-400 font-bold uppercase text-right">{m.awayCode}</span>
                           </div>
                         );
