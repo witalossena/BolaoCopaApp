@@ -234,7 +234,7 @@ export default function App() {
     if (view === "pub_ranking")
       return (
         <PublicShell active="pub_ranking" go={setView}>
-          <Ranking ranking={realRanking} currentUser={{ handle: "__none__" }} />
+          <Ranking ranking={realRanking} currentUser={{ handle: "__none__" }} prizePool={prizePool} />
         </PublicShell>
       );
     if (view === "pub_regras")
@@ -257,7 +257,7 @@ export default function App() {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} />; break;
-    case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
+    case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} />; break;
     case "regras":     screen = <Regras />; break;
     case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} prizePool={prizePool} setPrizePool={setPrizePool} />; break;

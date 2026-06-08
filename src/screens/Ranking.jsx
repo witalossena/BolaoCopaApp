@@ -4,14 +4,14 @@ import { Card } from '../components/ui/Card';
 import { PageTitle } from '../components/ui/PageTitle';
 import { Badge } from '../components/ui/Badge';
 
-export function Ranking({ ranking, currentUser }) {
+export function Ranking({ ranking, currentUser, prizePool = 0 }) {
   const [mode, setMode] = useState("geral"); // geral or premium
   const medal = ["#e3b23c", "#c9c9c9", "#cd7f4a"];
 
   const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
   const premiumUsers = ranking.filter(u => u.isPaid);
-  const totalArrecadado = premiumUsers.length * 30;
+  const totalArrecadado = prizePool;
   
   const displayRanking = mode === "premium" ? premiumUsers : ranking;
 
