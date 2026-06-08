@@ -87,7 +87,14 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
 
         {displayRanking.map((u, i) => {
           const me = u.handle === currentUser?.handle;
-          const userPrize = (i < 3 && u.total > 0) ? prizes[i].value : null;
+          
+          let userPrize = null;
+          if (u.isPaid && u.total > 0) {
+            const premiumIndex = premiumUsers.findIndex(pu => pu.handle === u.handle);
+            if (premiumIndex !== -1 && premiumIndex < 3) {
+              userPrize = prizes[premiumIndex].value;
+            }
+          }
 
           return (
             <div key={u.handle}
