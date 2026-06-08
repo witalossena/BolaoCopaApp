@@ -6,7 +6,7 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { SectionLabel } from '../components/ui/SectionLabel';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { predictionService } from '../services/api';
-import { SPECIAL_FIELDS } from '../data';
+import { SPECIAL_FIELDS, MATCHES } from '../data';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -52,16 +52,32 @@ function ptsTone(pts) {
 export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }) {
   const [history, setHistory] = useState([]);
   const [groupRanks, setGroupRanks] = useState([]);
+  const [matchPredictions, setMatchPredictions] = useState([]);
+  const [knockoutPredictions, setKnockoutPredictions] = useState([]);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     predictionService.getPredictionHistory().then(setHistory).catch(() => {});
-    predictionService.getUserPredictions().then(d => setGroupRanks(d.groupRanks || [])).catch(() => {});
+    predictionService.getUserPredictions().then(d => {
+      setGroupRanks(d.groupRanks || []);
+      setMatchPredictions(d.matchPredictions || []);
+      setKnockoutPredictions(d.knockoutPredictions || []);
+    }).catch(() => {});
   }, []);
 
-  const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
-  const pts = user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 };
+  const rankEntry = ranking.find(u => u.handle === user.handle);
+  const pos = ranking.indexOf(rankEntry) + 1;
+  
+  const pts = rankEntry ? {
+    total: rankEntry.total || 0,
+    groupPts: rankEntry.groupPts || 0,
+    knockoutPts: rankEntry.knockoutPts || 0,
+    specialPts: rankEntry.specialPts || 0,
+    exactCount: rankEntry.exactCount || 0,
+    exactRate: rankEntry.exactRate || 0
+  } : (user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 });
+
   const total = pts.total;
 
   const leaderTotal = ranking.length > 0 ? ranking[0].total : 0;
@@ -173,12 +189,13 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
         </div>
       </Card>
 
-      {(history.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0) && (
+      {(history.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0 || matchPredictions.length > 0 || knockoutPredictions.length > 0) && (
         <Card accent className="mt-6">
           <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
 
           {history.length > 0 && (
-            <div className="divide-y divide-edge/40 mb-4">
+            <div className="divide-y divide-edge/40 mb-6">
+              <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Jogos Encerrados</div>
               {history.map((item, i) => {
                 const tone = ptsTone(item.points);
                 return (
@@ -210,12 +227,58 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
             </div>
           )}
 
-          {(groupRanks.length > 0 || Object.keys(specials).length > 0) && (
-            <div className={`${history.length > 0 ? "pt-4 border-t border-edge/40" : ""}`}>
+          {(matchPredictions.length > 0 || knockoutPredictions.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0) && (
+            <div className={`${history.length > 0 ? "pt-4 border-t border-edge/40" : ""} space-y-6`}>
+              
+              {matchPredictions.length > 0 && (
+                <div>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Placares (Fase de Grupos)</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {matchPredictions.map(p => {
+                      const match = MATCHES.find(m => m.id === p.externalId || m.id === `m${p.matchId}`);
+                      if (!match) return null;
+                      return (
+                        <div key={p.id} className="bg-surface2/50 rounded-xl p-2 flex flex-col items-center gap-1 border border-edge/30">
+                          <div className="font-cond text-[9px] text-mute2 uppercase tracking-tighter">Grupo {match.group}</div>
+                          <div className="flex items-center gap-1.5 font-cond font-bold text-xs text-cream">
+                            <span>{match.homeCode}</span>
+                            <span className="bg-bg/60 px-1.5 rounded text-grass-400">{p.homeScore}×{p.awayScore}</span>
+                            <span>{match.awayCode}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {knockoutPredictions.length > 0 && (
+                <div>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Mata-Mata</div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {knockoutPredictions.map(p => (
+                      <div key={p.id} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2 border border-edge/30">
+                        <span className="text-grass-400 shrink-0"><Icon name="bracket" size={14} /></span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-cond text-[10px] text-mute2 uppercase tracking-wider leading-none mb-1">
+                            {p.externalId?.includes('r32') ? 'Oitavas' : 
+                             p.externalId?.includes('r16') ? 'Quartas' : 
+                             p.externalId?.includes('sf') ? 'Semifinal' : 'Final'}
+                          </div>
+                          <div className="font-cond font-bold text-xs text-cream truncate">
+                            {p.winnerTeam} <span className="text-mute2 font-normal ml-1">({p.homeScore}×{p.awayScore})</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {groupRanks.length > 0 && (
-                <>
+                <div>
                   <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2">
                     {groupRanks.map(g => {
                       const tone = ptsTone(g.points || 0);
                       return (
@@ -234,11 +297,11 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
                       );
                     })}
                   </div>
-                </>
+                </div>
               )}
 
               {Object.keys(specials).length > 0 && (
-                <>
+                <div>
                   <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Pódio & Premiações</div>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {SPECIAL_FIELDS.map(f => {
@@ -260,7 +323,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
                       );
                     })}
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}
