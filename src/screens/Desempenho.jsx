@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -7,6 +7,8 @@ import { SectionLabel } from '../components/ui/SectionLabel';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { predictionService } from '../services/api';
 import { SPECIAL_FIELDS, MATCHES } from '../data';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -56,6 +58,8 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
   const [knockoutPredictions, setKnockoutPredictions] = useState([]);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const dashboardRef = useRef();
 
   useEffect(() => {
     predictionService.getPredictionHistory().then(setHistory).catch(() => {});
@@ -92,11 +96,41 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
     try { await onClearAll?.(); } finally { setClearing(false); setClearConfirm(false); }
   };
 
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#0a1a0f',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`bolao-copa-2026-${user.handle}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
   return (
-    <div>
-      <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`}>Meu Desempenho</PageTitle>
+    <div ref={dashboardRef} className="bg-bg p-2 sm:p-4 rounded-3xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+        <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`} className="mb-0">Meu Desempenho</PageTitle>
+        <Button variant="secondary" icon="download" disabled={downloading} onClick={handleDownloadPDF}>
+          {downloading ? "Gerando PDF..." : "Baixar Palpites (PDF)"}
+        </Button>
+      </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <BigStat icon="zap" value={total} label="Pontos totais acumulados" />
