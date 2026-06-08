@@ -205,21 +205,10 @@ export function Admin({ allUsers, togglePaid }) {
     setBusy("calc");
     try {
       await adminService.calculateScores();
+      await adminService.calculateGroupScores();
       showToast("Pontuações recalculadas para todos.");
     } catch {
       showToast("Erro ao recalcular pontuações.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleCalculateGroups = async () => {
-    setBusy("calcGroups");
-    try {
-      await adminService.calculateGroupScores();
-      showToast("Pontuação de grupos calculada.");
-    } catch {
-      showToast("Erro ao calcular pontuação de grupos.");
     } finally {
       setBusy(null);
     }
@@ -360,15 +349,12 @@ export function Admin({ allUsers, togglePaid }) {
         <AdminTile icon="ball"   value={TOTAL_MATCHES} label="JOGOS NO BANCO" />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-6">
+      <div className="grid sm:grid-cols-2 gap-3 mb-6">
         <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
           {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
         <Button variant="primary" size="lg" icon="calculator" disabled={!!busy} onClick={handleCalculate}>
           {busy === "calc" ? "Calculando..." : "Calcular Pontuações"}
-        </Button>
-        <Button variant="secondary" size="lg" icon="users" disabled={!!busy} onClick={handleCalculateGroups}>
-          {busy === "calcGroups" ? "Calculando..." : "Calcular Grupos"}
         </Button>
       </div>
 
