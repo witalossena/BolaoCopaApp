@@ -129,7 +129,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
+export function Admin({ allUsers, togglePaid, onPaymentConfirmed, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -223,7 +223,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
     setBusy(`pay-${paymentUser.id}`);
     try {
       await adminService.confirmPayment(paymentUser.handle, amount);
-      togglePaid(paymentUser.id, amount > 0);
+      onPaymentConfirmed(paymentUser.id, amount);
       
       // Update local prize pool state
       const oldAmount = paymentUser.paidAmount || 0;
