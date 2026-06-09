@@ -85,6 +85,10 @@ export const predictionService = {
     const response = await api.post('/predictions/knockout', { matchId, winnerTeam, homeScore, awayScore });
     return response.data;
   },
+  submitSpecialPrediction: async (prediction) => {
+    const response = await api.post('/predictions/specials', prediction);
+    return response.data;
+  },
   clearKnockoutPredictions: async () => {
     const response = await api.delete('/predictions/knockout');
     return response.data;

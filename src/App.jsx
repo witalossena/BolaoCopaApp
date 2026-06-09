@@ -41,6 +41,7 @@ function idOf(u) { return u.handle || u.user; }
 
 export default function App() {
   const saved = useRef(loadStore()).current;
+  const specialsDebounceRef = useRef(null);
 
   const [view, setView]             = useState(saved.view || "landing");
   const [user, setUser]             = useState(localStorage.getItem('token') ? authService.getCurrentUser() : null);
@@ -146,8 +147,38 @@ export default function App() {
         setKoWinners(prev => ({ ...prev, ...winnerMap }));
         setKoScores(prev => ({ ...prev, ...scoreMap }));
       }
+      if (data.specials) {
+        setSpecials({
+          campeao: data.specials.champion || '',
+          vice: data.specials.runnerUp || '',
+          terceiro: data.specials.thirdPlace || '',
+          artilheiro: data.specials.topScorer || '',
+          assist: data.specials.mostAssists || '',
+          mvp: data.specials.mvp || '',
+          goldenboy: data.specials.goldenBoy || '',
+        });
+      }
     }).catch(() => {});
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    const hasAny = Object.values(specials).some(v => v && v.trim());
+    if (!hasAny) return;
+    if (specialsDebounceRef.current) clearTimeout(specialsDebounceRef.current);
+    specialsDebounceRef.current = setTimeout(() => {
+      predictionService.submitSpecialPrediction({
+        champion: specials.campeao || null,
+        runnerUp: specials.vice || null,
+        thirdPlace: specials.terceiro || null,
+        otherFinalist: null,
+        topScorer: specials.artilheiro || null,
+        mostAssists: specials.assist || null,
+        mvp: specials.mvp || null,
+        goldenBoy: specials.goldenboy || null,
+      }).catch(err => console.error('Failed to save specials:', err));
+    }, 800);
+  }, [specials, user]);
 
   // Sync bracket picks → specials for derivable team fields
   useEffect(() => {
