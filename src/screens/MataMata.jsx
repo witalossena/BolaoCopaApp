@@ -151,8 +151,14 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     });
   };
 
-  const pickThird = (groupId, team) => {
+  const pickThird = (groupId, team, ranks) => {
     setThirds(prev => ({ ...prev, [groupId]: team || undefined }));
+    predictionService.submitGroupRankPrediction(
+      groupId,
+      ranks?.[groupId]?.first || "",
+      ranks?.[groupId]?.second || "",
+      team || ""
+    ).catch(console.error);
   };
 
   const matchesIn = (round) => 16 / Math.pow(2, round);
@@ -203,7 +209,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
                 <Select
                   value={selected}
                   placeholder="3º lugar..."
-                  onChange={e => pickThird(g, e.target.value)}
+                  onChange={e => pickThird(g, e.target.value, ranks)}
                 >
                   {options.map(t => <option key={t} value={t}>{t}</option>)}
                 </Select>

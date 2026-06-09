@@ -64,8 +64,8 @@ export const predictionService = {
     const response = await api.post('/predictions/match', { matchId, homeScore, awayScore });
     return response.data;
   },
-  submitGroupRankPrediction: async (group, firstTeam, secondTeam) => {
-    const response = await api.post('/predictions/group-rank', { group, firstTeam, secondTeam });
+  submitGroupRankPrediction: async (group, firstTeam, secondTeam, thirdTeam = null) => {
+    const response = await api.post('/predictions/group-rank', { group, firstTeam, secondTeam, thirdTeam });
     return response.data;
   },
   submitKnockoutPrediction: async (matchId, winnerTeam) => {

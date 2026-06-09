@@ -106,6 +106,13 @@ export default function App() {
           });
           return merged;
         });
+        setThirds(prev => {
+          const merged = { ...prev };
+          data.groupRanks.forEach(g => {
+            if (g.thirdTeam) merged[g.group] = g.thirdTeam;
+          });
+          return merged;
+        });
       }
       if (data.knockoutPredictions?.length > 0) {
         const winnerMap = {};
