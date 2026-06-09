@@ -184,8 +184,14 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     }
   };
 
-  const pickThird = (groupId, team) => {
+  const pickThird = (groupId, team, ranks) => {
     setThirds(prev => ({ ...prev, [groupId]: team || undefined }));
+    predictionService.submitGroupRankPrediction(
+      groupId,
+      ranks?.[groupId]?.first || "",
+      ranks?.[groupId]?.second || "",
+      team || ""
+    ).catch(console.error);
   };
 
   const matchesIn = (round) => 16 / Math.pow(2, round);
