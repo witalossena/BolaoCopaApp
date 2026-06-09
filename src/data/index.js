@@ -155,11 +155,12 @@ export const SCORING = {
     { label: "Apenas resultado (vencedor ou empate)", pts: 5 },
   ],
   groups: [
-    { label: "Seleção classificada na posição certa (1º ou 2º)", pts: 10 },
+    { label: "Seleção classificada na posição certa (1º, 2º, 3º ou 4º)", pts: 20 },
     { label: "Seleção classificada, mas em outra posição", pts: 5 },
   ],
   knockout: [
-    { label: "Vencedor de cada confronto previsto corretamente", pts: 10 },
+    { label: "Vencedor de cada confronto previsto corretamente", pts: 15 },
+    { label: "Vencedor de cada confronto previsto corretamente (placar)", pts: 20 },
   ],
   awards: [
     { key:"campeao",    label:"Campeão",                         pts:75 },

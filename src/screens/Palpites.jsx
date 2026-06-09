@@ -11,19 +11,24 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { Select } from '../components/ui/Select';
 import { TEAMS } from '../data';
 
-function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }) {
+function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {}, globalLocked = false }) {
   const apiStatus = matchStatuses[match.id];
   const effectiveStatus = apiStatus || match.status;
-  const locked = effectiveStatus === "locked";
+  const locked = globalLocked || effectiveStatus === "locked";
   const soon = !locked && effectiveStatus === "soon";
   const homeRef = useRef();
   const awayRef = useRef();
 
   const submitIfComplete = () => {
     const matchGuid = matchIdMap[match.id];
-    const h = homeRef.current?.value;
-    const a = awayRef.current?.value;
-    if (!matchGuid || h === "" || h == null || a === "" || a == null) return;
+    if (!matchGuid) return;
+    let h = homeRef.current?.value;
+    let a = awayRef.current?.value;
+    const hFilled = h !== "" && h != null;
+    const aFilled = a !== "" && a != null;
+    if (!hFilled && !aFilled) return;
+    if (hFilled && !aFilled) { a = "0"; onScore("a", "0"); }
+    if (aFilled && !hFilled) { h = "0"; onScore("h", "0"); }
     predictionService.submitMatchPrediction(matchGuid, parseInt(h, 10), parseInt(a, 10))
       .catch(console.error);
   };
@@ -61,12 +66,22 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
       </div>
 
       <div className="shrink-0 flex justify-end w-6 sm:w-28">
-        {locked && (
-          <>
-            <span className="sm:hidden text-mute2"><Icon name="lock" size={14} /></span>
-            <span className="hidden sm:block"><Badge tone="locked" icon="lock">Encerrada</Badge></span>
-          </>
-        )}
+        {locked && (() => {
+          const hasH = score?.h !== "" && score?.h != null;
+          const hasA = score?.a !== "" && score?.a != null;
+          const incomplete = (hasH || hasA) && !(hasH && hasA);
+          return incomplete ? (
+            <>
+              <span className="sm:hidden text-gold"><Icon name="alert" size={14} /></span>
+              <span className="hidden sm:block"><Badge tone="amber" icon="alert">Incompleto</Badge></span>
+            </>
+          ) : (
+            <>
+              <span className="sm:hidden text-mute2"><Icon name="lock" size={14} /></span>
+              <span className="hidden sm:block"><Badge tone="locked" icon="lock">Encerrada</Badge></span>
+            </>
+          );
+        })()}
         {soon && (
           <>
             <span className="sm:hidden text-gold"><Icon name="clock" size={14} /></span>
@@ -79,37 +94,51 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {} }
   );
 }
 
-function GroupRanks({ group, ranks, setRank }) {
+const POSITIONS = [
+  { key: "first",  label: "1º lugar", icon: "crown",  colorCls: "text-gold",       tone: "gold"   },
+  { key: "second", label: "2º lugar", icon: "medal",  colorCls: "text-grass-400",  tone: "green"  },
+  { key: "third",  label: "3º lugar", icon: "award",  colorCls: "text-orange-400", tone: "bronze" },
+  { key: "fourth", label: "4º lugar", icon: "shield", colorCls: "text-mute2",      tone: "mute"   },
+];
+
+function GroupRanks({ group, ranks, setRank, locked = false }) {
   const r = ranks[group.id] || {};
-  const opts = (exclude) => group.teams
-    .filter(t => t !== exclude)
-    .map(t => <option key={t} value={t}>{TEAMS[t]} · {t}</option>);
+
+  const getOpts = (currentKey) => {
+    const taken = POSITIONS
+      .filter(p => p.key !== currentKey)
+      .map(p => r[p.key])
+      .filter(Boolean);
+    return group.teams
+      .filter(t => !taken.includes(t))
+      .map(t => <option key={t} value={t}>{TEAMS[t]} · {t}</option>);
+  };
 
   const handleChange = (key, val) => {
     setRank(group.id, key, val);
-    const first = key === 'first' ? val : r.first;
-    const second = key === 'second' ? val : r.second;
+    const updated = { ...r, [key]: val };
+    const { first, second, third, fourth } = updated;
     if (first && second) {
-      predictionService.submitGroupRankPrediction(group.id, first, second).catch(console.error);
+      predictionService.submitGroupRankPrediction(group.id, first, second, third, fourth).catch(console.error);
     }
   };
 
   return (
     <div className="mt-4 pt-4 border-t border-edge/60 grid sm:grid-cols-2 gap-3">
-      {[["first", "1º lugar", "gold"], ["second", "2º lugar", "green"]].map(([key, label, tone]) => (
+      {POSITIONS.map(({ key, label, icon, colorCls, tone }) => (
         <div key={key} className="bg-bg/40 rounded-xl border border-edge p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="font-cond font-semibold text-sm flex items-center gap-1.5">
-              <span className={tone === "gold" ? "text-gold" : "text-grass-400"}>
-                <Icon name={tone === "gold" ? "crown" : "medal"} size={15} />
+              <span className={colorCls}>
+                <Icon name={icon} size={15} />
               </span>
               {label}
             </span>
-            <PointPill pts={10} tone={tone} />
+            <PointPill pts={20} tone={tone} />
           </div>
-          <Select value={r[key] || ""} placeholder="Quem se classifica?"
+          <Select value={r[key] || ""} placeholder="Quem se classifica?" disabled={locked}
             onChange={e => handleChange(key, e.target.value)}>
-            {opts(key === "first" ? r.second : r.first)}
+            {getOpts(key)}
           </Select>
         </div>
       ))}
@@ -117,37 +146,7 @@ function GroupRanks({ group, ranks, setRank }) {
   );
 }
 
-function buildWhatsAppText(scores, ranks) {
-  const lines = ["*Meus Palpites - Copa do Mundo 2026* ⚽\n"];
-
-  for (const gId of GROUP_ORDER) {
-    const group = GROUPS.find(g => g.id === gId);
-    const groupLines = [];
-
-    for (const m of group.matches) {
-      const s = scores[m.id];
-      if (s && s.h !== "" && s.h != null && s.a !== "" && s.a != null) {
-        groupLines.push(`${m.home} ${s.h} × ${s.a} ${m.away}`);
-      }
-    }
-
-    const r = ranks[gId];
-    const hasRanks = r?.first || r?.second;
-
-    if (groupLines.length > 0 || hasRanks) {
-      lines.push(`*-- GRUPO ${gId} --*`);
-      groupLines.forEach(l => lines.push(l));
-      if (hasRanks) {
-        lines.push(`1º ${r.first || "?"}  |  2º ${r.second || "?"}`);
-      }
-      lines.push("");
-    }
-  }
-
-  return lines.join("\n").trim();
-}
-
-export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {}, matchIdMap = {} }) {
+export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {}, matchIdMap = {}, locked = false }) {
   const [active, setActive] = useState("A");
   const group = GROUPS.find(g => g.id === active);
   const idx = GROUP_ORDER.indexOf(active);
@@ -232,32 +231,34 @@ export function Palpites({ scores, setScore, ranks, setRank, matchStatuses = {},
         <div className="divide-y divide-edge/40 mt-2">
           {group.matches.map(m => (
             <MatchRow key={m.id} match={m} score={scores[m.id]}
-              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />
+              onScore={(side, val) => setScore(m.id, side, val)} matchStatuses={matchStatuses} matchIdMap={matchIdMap} globalLocked={locked} />
           ))}
         </div>
 
-        <GroupRanks group={group} ranks={ranks} setRank={setRank} />
+        <GroupRanks group={group} ranks={ranks} setRank={setRank} locked={locked} />
       </Card>
 
-      <div className="flex items-center justify-between mt-5 gap-3 flex-wrap">
-        <p className="text-mute2 text-sm flex items-center gap-2">
-          <Icon name="checkCircle" size={16} className="text-grass-400" />
-          Seus palpites são salvos automaticamente.
+      <div className="mt-8 pt-6 border-t border-edge/40 flex flex-col sm:flex-row items-center justify-between gap-5">
+        <p className="text-mute2 text-sm flex items-center gap-2 order-2 sm:order-1">
+          {locked ? (
+            <>
+              <Icon name="lock" size={16} className="text-gold" />
+              As apostas estão temporariamente travadas pela administração.
+            </>
+          ) : (
+            <>
+              <Icon name="checkCircle" size={16} className="text-grass-400" />
+              Seus palpites são salvos automaticamente.
+            </>
+          )}
         </p>
-        <Button variant="secondary" iconRight="arrowRight"
-          onClick={() => setActive(GROUP_ORDER[(idx + 1) % 12])}>
-          Próximo grupo
-        </Button>
-      </div>
 
-      <div className="mt-4 flex justify-end">
-        <button onClick={handleShareWhatsApp}
-          className="flex items-center gap-2 px-4 h-10 rounded-xl font-cond font-semibold text-sm border border-edge bg-surface2 text-cream hover:border-[#25D366] hover:text-[#25D366] transition">
-          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
-          </svg>
-          Compartilhar palpites
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto order-1 sm:order-2">
+          <Button variant="secondary" iconRight="arrowRight" className="w-full sm:w-auto h-11"
+            onClick={() => setActive(GROUP_ORDER[(idx + 1) % 12])}>
+            Próximo grupo
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { TOTAL_MATCHES, GROUP_ORDER } from '../data';
+import { TOTAL_MATCHES, GROUP_ORDER, GROUPS } from '../data';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { TeamBadge } from '../components/ui/TeamBadge';
 import { PageTitle } from '../components/ui/PageTitle';
+import { Select } from '../components/ui/Select';
 import { matchService, adminService } from '../services/api';
 
 function AdminTile({ icon, value, label, tone }) {
@@ -63,13 +64,13 @@ function UserPredictionsModal({ user, matches, onClose }) {
                   {predictions.matchPredictions.map(p => {
                     const m = matchMap[p.externalId];
                     return (
-                      <div key={p.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div key={p.externalId} className="flex items-center gap-2 bg-surface2 rounded-xl px-4 py-2.5">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
                           <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
                         </div>
-                        <span className="font-display text-cream text-sm mx-3 shrink-0">{p.homeScore} × {p.awayScore}</span>
-                        <div className="flex items-center gap-2 min-w-0 justify-end">
+                        <span className="font-display text-cream text-sm shrink-0 w-14 text-center">{p.homeScore} × {p.awayScore}</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
                           <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
                           {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
                         </div>
@@ -85,10 +86,16 @@ function UserPredictionsModal({ user, matches, onClose }) {
                 <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
                 <div className="space-y-1.5">
                   {predictions.groupRanks.map(g => (
-                    <div key={g.group} className="flex items-center gap-3 bg-surface2 rounded-xl px-4 py-2.5">
-                      <span className="font-display text-cream w-5 shrink-0">{g.group}</span>
-                      <div className="flex-1 font-cond text-sm text-cream truncate">1º {g.firstTeam}</div>
-                      <div className="flex-1 font-cond text-sm text-mute2 truncate text-right">2º {g.secondTeam}</div>
+                    <div key={g.group} className="bg-surface2 rounded-xl px-4 py-2.5 flex items-start gap-3">
+                      <span className="font-display text-cream w-5 shrink-0 mt-0.5">{g.group}</span>
+                      <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-0.5">
+                        <div className="font-cond text-sm text-cream truncate">1º {g.firstTeam}</div>
+                        <div className="font-cond text-sm text-mute2 truncate text-right">2º {g.secondTeam}</div>
+                        {(g.thirdTeam || g.fourthTeam) && <>
+                          <div className="font-cond text-xs text-mute2 truncate">3º {g.thirdTeam || '–'}</div>
+                          <div className="font-cond text-xs text-mute2 truncate text-right">4º {g.fourthTeam || '–'}</div>
+                        </>}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -122,18 +129,35 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid }) {
+export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
   const [activeGroup, setActiveGroup] = useState("A");
   const [localScores, setLocalScores] = useState({});
   const [savingMatch, setSavingMatch] = useState(null);
+  const [resettingMatch, setResettingMatch] = useState(null);
   const [lockingMatch, setLockingMatch] = useState(null);
-  const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "matamata"
+  const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "classificacao" | "matamata"
+  const [groupResults, setGroupResults] = useState({});
+  const [savingGroupResult, setSavingGroupResult] = useState(null);
+  const [resettingGroup, setResettingGroup] = useState(null);
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
+  const [paymentUser, setPaymentUser] = useState(null);
+  const [localPrizePool, setLocalPrizePool] = useState(prizePool);
+  const [savingPrize, setSavingPrize] = useState(false);
+  const [lockingAll, setLockingAll] = useState(false);
+  useEffect(() => { setLocalPrizePool(prizePool); }, [prizePool]);
+
+  useEffect(() => {
+    adminService.getGroupResults().then(data => {
+      const map = {};
+      data.forEach(r => { map[r.group] = { first: r.firstTeam, second: r.secondTeam, third: r.thirdTeam || "", fourth: r.fourthTeam || "" }; });
+      setGroupResults(map);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     matchService.getMatches().then(data => {
@@ -186,11 +210,105 @@ export function Admin({ allUsers, togglePaid }) {
     setBusy("calc");
     try {
       await adminService.calculateScores();
+      await adminService.calculateGroupScores();
       showToast("Pontuações recalculadas para todos.");
     } catch {
       showToast("Erro ao recalcular pontuações.");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const handleConfirmPayment = async (amount) => {
+    setBusy(`pay-${paymentUser.id}`);
+    try {
+      await adminService.confirmPayment(paymentUser.handle, amount);
+      togglePaid(paymentUser.id, amount > 0);
+      
+      // Update local prize pool state
+      const oldAmount = paymentUser.paidAmount || 0;
+      setPrizePool(prev => prev - oldAmount + amount);
+      
+      showToast(`Pagamento de ${paymentUser.name} registrado!`);
+    } catch (err) {
+      showToast("Erro ao registrar pagamento.");
+    } finally {
+      setBusy(null);
+      setPaymentUser(null);
+    }
+  };
+
+  const toggleLockAll = async () => {
+    const next = !arePredictionsLocked;
+    setLockingAll(true);
+    try {
+      await adminService.lockAllPredictions(next);
+      setArePredictionsLocked(next);
+      showToast(next ? "Todas as apostas foram travadas!" : "Apostas liberadas para edição.");
+    } catch {
+      showToast("Erro ao alterar trava global.");
+    } finally {
+      setLockingAll(false);
+    }
+  };
+
+  const savePrize = async () => {
+    setSavingPrize(true);
+    try {
+      await adminService.setPrizePool(parseFloat(localPrizePool) || 0);
+      setPrizePool(parseFloat(localPrizePool) || 0);
+      showToast("Premiação salva.");
+    } catch {
+      showToast("Erro ao salvar premiação.");
+    } finally {
+      setSavingPrize(false);
+    }
+  };
+
+  const saveGroupResult = async (groupId) => {
+    const r = groupResults[groupId];
+    if (!r?.first || !r?.second) return;
+    setSavingGroupResult(groupId);
+    try {
+      await adminService.setGroupResult(groupId, r.first, r.second, r.third || null, r.fourth || null);
+      showToast(`Resultado do Grupo ${groupId} salvo.`);
+    } catch {
+      showToast("Erro ao salvar resultado.");
+    } finally {
+      setSavingGroupResult(null);
+    }
+  };
+
+  const setGroupResult = (groupId, key, val) => {
+    setGroupResults(prev => ({ ...prev, [groupId]: { ...(prev[groupId] || {}), [key]: val } }));
+  };
+
+  const resetGroupResult = async (groupId) => {
+    setResettingGroup(groupId);
+    try {
+      await adminService.resetGroupResult(groupId);
+      setGroupResults(prev => ({ ...prev, [groupId]: {} }));
+      showToast(`Classificação do Grupo ${groupId} removida.`);
+    } catch {
+      showToast("Erro ao resetar classificação.");
+    } finally {
+      setResettingGroup(null);
+    }
+  };
+
+  const resetResult = async (matchId) => {
+    setResettingMatch(matchId);
+    try {
+      await adminService.resetMatchResult(matchId);
+      setMatches(prev => prev.map(m =>
+        m.id === matchId ? { ...m, status: "Open", realHome: null, realAway: null } : m
+      ));
+      setLocalScores(prev => ({ ...prev, [matchId]: { h: "", a: "" } }));
+      showToast("Resultado removido.");
+    } catch {
+      showToast("Erro ao resetar resultado.");
+    } finally {
+      setResettingMatch(null);
     }
   };
 
@@ -282,14 +400,62 @@ export function Admin({ allUsers, togglePaid }) {
         <AdminTile icon="ball"   value={TOTAL_MATCHES} label="JOGOS NO BANCO" />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3 mb-6">
+      <div className="grid sm:grid-cols-3 gap-3 mb-4">
         <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
           {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
         <Button variant="primary" size="lg" icon="calculator" disabled={!!busy} onClick={handleCalculate}>
           {busy === "calc" ? "Calculando..." : "Calcular Pontuações"}
         </Button>
+        <Button variant={arePredictionsLocked ? "danger" : "secondary"} size="lg" icon={arePredictionsLocked ? "lock" : "unlock"}
+          disabled={lockingAll} onClick={toggleLockAll}>
+          {lockingAll ? "..." : arePredictionsLocked ? "Apostas Travadas" : "Travar Tudo"}
+        </Button>
       </div>
+
+      <Card className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div className="font-cond font-semibold text-cream text-sm">Fase do Torneio</div>
+          <div className="font-cond text-mute2 text-xs mt-0.5">
+            {tournamentPhase === "KnockoutStage" ? "Mata-Mata aberto para palpites" : "Fase de Grupos — Mata-Mata bloqueado"}
+          </div>
+        </div>
+        <Button
+          variant={tournamentPhase === "KnockoutStage" ? "secondary" : "primary"}
+          icon="lock"
+          disabled={!!busy}
+          onClick={async () => {
+            const next = tournamentPhase === "KnockoutStage" ? "GroupStage" : "KnockoutStage";
+            setBusy("phase");
+            try {
+              await adminService.setTournamentPhase(next);
+              setTournamentPhase(next);
+              showToast(next === "KnockoutStage" ? "Mata-Mata aberto!" : "Mata-Mata bloqueado.");
+            } catch { showToast("Erro ao alterar fase."); }
+            finally { setBusy(null); }
+          }}>
+          {busy === "phase" ? "..." : tournamentPhase === "KnockoutStage" ? "Bloquear Mata-Mata" : "Abrir Mata-Mata"}
+        </Button>
+      </Card>
+
+      <Card className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div className="font-cond font-semibold text-cream text-sm">Premiação</div>
+          <div className="font-cond text-mute2 text-xs mt-0.5">Valor total do prêmio a ser distribuído entre os participantes.</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-cond text-mute2 text-sm shrink-0">R$</span>
+          <input
+            type="number" min="0" step="0.01"
+            value={localPrizePool}
+            onChange={e => setLocalPrizePool(e.target.value)}
+            className="w-28 h-9 px-3 text-sm font-cond font-bold rounded-xl border outline-none transition bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25"
+          />
+          <Button variant="primary" size="sm" disabled={savingPrize} onClick={savePrize}>
+            {savingPrize ? "..." : "Salvar"}
+          </Button>
+        </div>
+      </Card>
 
       <Card pad={false} className="overflow-hidden mb-6">
         <div className="px-5 py-3.5 border-b border-edge flex items-center justify-between">
@@ -297,14 +463,14 @@ export function Admin({ allUsers, togglePaid }) {
           <span className="font-cond text-mute2 text-sm">{launchedCount}/{matches.length} lançados</span>
         </div>
 
-        <div className="px-5 py-3 border-b border-edge flex gap-2">
-          {["grupos", "matamata"].map(tab => (
+        <div className="px-5 py-3 border-b border-edge flex gap-2 flex-wrap">
+          {[["grupos", "Fase de Grupos"], ["classificacao", "Classificação"], ["matamata", "Mata-Mata"]].map(([tab, label]) => (
             <button key={tab} onClick={() => setResultTab(tab)}
               className={`px-4 h-8 rounded-xl font-cond font-bold text-sm border transition-all
                 ${resultTab === tab
                   ? "bg-grass text-bg border-grass"
                   : "bg-surface2 text-mute border-edge hover:text-cream hover:border-edge2"}`}>
-              {tab === "grupos" ? "Fase de Grupos" : "Mata-Mata"}
+              {label}
             </button>
           ))}
         </div>
@@ -352,6 +518,13 @@ export function Admin({ allUsers, togglePaid }) {
                   {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
                 </Button>
               );
+              const resetBtn = hasResult && (
+                <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
+                  title="Remover resultado"
+                  className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                  <Icon name="x" size={13} />
+                </button>
+              );
               return (
                 <div key={m.id} className="px-3 sm:px-5 py-3">
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -373,13 +546,64 @@ export function Admin({ allUsers, togglePaid }) {
                       <TeamBadge name={m.awayTeam} showName={false} size="sm" />
                       <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                     </div>
-                    {lockBtn}{saveBtn}
+                    {lockBtn}{saveBtn}{resetBtn}
                   </div>
                 </div>
               );
             })}
           </div>
         </>)}
+
+        {resultTab === "classificacao" && (
+          <div className="divide-y divide-edge/40">
+            <div className="px-5 py-3 bg-surface2/30 font-cond text-xs text-mute2">
+              Registre o resultado final de cada grupo (1º ao 4º) para calcular a pontuação dos palpites de classificação.
+            </div>
+            {GROUP_ORDER.map(gId => {
+              const group = GROUPS.find(g => g.id === gId);
+              const r = groupResults[gId] || {};
+              const teams = group?.teams || [];
+              const getOpts = (currentKey) => {
+                const taken = ["first","second","third","fourth"].filter(k => k !== currentKey).map(k => r[k]).filter(Boolean);
+                return teams.filter(t => !taken.includes(t));
+              };
+              const canSave = r.first && r.second && savingGroupResult !== gId;
+              const saved = r.first && r.second;
+              return (
+                <div key={gId} className="px-5 py-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="font-display text-grass-400 text-lg">Grupo {gId}</span>
+                    {saved && <span className="font-cond text-xs text-grass-400 flex items-center gap-1"><Icon name="checkCircle" size={13} />Salvo</span>}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                    {[["first","1º"], ["second","2º"], ["third","3º"], ["fourth","4º"]].map(([key, label]) => (
+                      <div key={key}>
+                        <div className="font-cond text-xs text-mute2 mb-1">{label} lugar</div>
+                        <Select value={r[key] || ""} placeholder="Selecionar..."
+                          onChange={e => setGroupResult(gId, key, e.target.value)}>
+                          {getOpts(key).map(t => <option key={t} value={t}>{t}</option>)}
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant={saved ? "secondary" : "primary"} disabled={!canSave}
+                      onClick={() => saveGroupResult(gId)}>
+                      {savingGroupResult === gId ? "..." : saved ? "Atualizar" : "Salvar"}
+                    </Button>
+                    {saved && (
+                      <button onClick={() => resetGroupResult(gId)} disabled={resettingGroup === gId}
+                        title="Remover classificação"
+                        className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                        <Icon name="x" size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {resultTab === "matamata" && (
           <div className="divide-y divide-edge/30">
@@ -432,6 +656,13 @@ export function Admin({ allUsers, togglePaid }) {
                             className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
                             {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
                           </Button>
+                          {hasResult && (
+                            <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
+                              title="Remover resultado"
+                              className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                              <Icon name="x" size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -480,7 +711,7 @@ export function Admin({ allUsers, togglePaid }) {
                   : <Badge tone="amber" icon="clock">Pendente</Badge>}
               </span>
             </div>
-            <button onClick={() => togglePaid(u)}
+            <button onClick={() => setPaymentUser(u)}
               className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left">
               {u.isPaid ? "Marcar pend." : "Marcar pago"}
             </button>
@@ -500,12 +731,63 @@ export function Admin({ allUsers, togglePaid }) {
         />
       )}
 
+      {paymentUser && (
+        <PaymentModal 
+          user={paymentUser} 
+          onClose={() => setPaymentUser(null)} 
+          onConfirm={handleConfirmPayment} 
+        />
+      )}
+
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface border border-grass/40 text-cream rounded-full px-5 py-3 shadow-card flex items-center gap-2.5 pop">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-edge/80 px-5 py-3 rounded-2xl shadow-card flex items-center gap-2.5 pop">
           <Icon name="checkCircle" size={18} className="text-grass-400" />
           <span className="font-cond font-semibold text-sm">{toast}</span>
         </div>
       )}
-    </div>
-  );
-}
+      </div>
+      );
+      }
+
+      function PaymentModal({ user, onClose, onConfirm }) {
+      const [val, setVal] = useState(user.isPaid ? String(user.paidAmount || "50") : "50");
+      return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/80 backdrop-blur-sm pop">
+      <Card className="w-full max-w-sm border-gold/30 shadow-2xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-full bg-gold-dim/20 border border-gold/40 grid place-items-center text-gold">
+            <Icon name="wallet" size={24} />
+          </div>
+          <div>
+            <h3 className="font-display text-xl text-cream">Registrar Pagamento</h3>
+            <p className="text-mute2 text-xs font-cond uppercase tracking-widest">{user.name}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          <div>
+            <label className="block text-[10px] font-cond font-bold text-mute2 uppercase tracking-widest mb-1.5 pl-1">
+              Valor Recebido (R$)
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold font-bold text-lg">R$</span>
+              <input autoFocus type="number" value={val} onChange={e => setVal(e.target.value)}
+                className="w-full bg-bg/60 border border-edge focus:border-gold rounded-xl h-14 pl-12 pr-4 text-2xl font-display text-cream outline-none transition" />
+            </div>
+          </div>
+          <p className="text-mute text-xs italic text-center px-4 leading-relaxed">
+            Ao confirmar, o usuário será marcado como <span className="text-gold font-bold">PAGO</span> e o valor será somado ao total.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" className="bg-gold text-bg border-gold hover:brightness-110" 
+            onClick={() => onConfirm(parseFloat(val) || 0)}>
+            {parseFloat(val) > 0 ? "Confirmar" : "Remover Pago"}
+          </Button>
+        </div>
+      </Card>
+      </div>
+      );
+      }

@@ -14,6 +14,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('bolao2026_v1');
+      window.dispatchEvent(new Event('auth:logout'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authService = {
   login: async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
@@ -64,16 +77,20 @@ export const predictionService = {
     const response = await api.post('/predictions/match', { matchId, homeScore, awayScore });
     return response.data;
   },
-  submitGroupRankPrediction: async (group, firstTeam, secondTeam, thirdTeam = null) => {
-    const response = await api.post('/predictions/group-rank', { group, firstTeam, secondTeam, thirdTeam });
+  submitGroupRankPrediction: async (group, firstTeam, secondTeam, thirdTeam, fourthTeam) => {
+    const response = await api.post('/predictions/group-rank', { group, firstTeam, secondTeam, thirdTeam, fourthTeam });
     return response.data;
   },
-  submitKnockoutPrediction: async (matchId, winnerTeam) => {
-    const response = await api.post('/predictions/knockout', { matchId, winnerTeam });
+  submitKnockoutPrediction: async (matchId, winnerTeam, homeScore, awayScore) => {
+    const response = await api.post('/predictions/knockout', { matchId, winnerTeam, homeScore, awayScore });
     return response.data;
   },
   clearKnockoutPredictions: async () => {
     const response = await api.delete('/predictions/knockout');
+    return response.data;
+  },
+  clearAllPredictions: async () => {
+    const response = await api.delete('/predictions/all');
     return response.data;
   }
 };
@@ -81,6 +98,13 @@ export const predictionService = {
 export const rankingService = {
   getRanking: async () => {
     const response = await api.get('/ranking');
+    return response.data;
+  }
+};
+
+export const tournamentService = {
+  getInfo: async () => {
+    const response = await api.get('/tournament/info');
     return response.data;
   }
 };
@@ -108,6 +132,18 @@ export const adminService = {
     const response = await api.post('/admin/calculate-scores');
     return response.data;
   },
+  getGroupResults: async () => {
+    const response = await api.get('/admin/group-results');
+    return response.data;
+  },
+  setGroupResult: async (group, firstTeam, secondTeam, thirdTeam, fourthTeam) => {
+    const response = await api.post('/admin/group-result', { group, firstTeam, secondTeam, thirdTeam, fourthTeam });
+    return response.data;
+  },
+  calculateGroupScores: async () => {
+    const response = await api.post('/admin/calculate-group-scores');
+    return response.data;
+  },
   lockMatch: async (matchId, isLocked) => {
     const response = await api.patch(`/admin/matches/${matchId}/lock`, isLocked, {
       headers: { 'Content-Type': 'application/json' }
@@ -120,6 +156,36 @@ export const adminService = {
   },
   getUserPredictions: async (userId) => {
     const response = await api.get(`/admin/users/${userId}/predictions`);
+    return response.data;
+  },
+  resetMatchResult: async (matchId) => {
+    const response = await api.delete(`/admin/matches/${matchId}/result`);
+    return response.data;
+  },
+  resetGroupResult: async (group) => {
+    const response = await api.delete(`/admin/group-result/${group}`);
+    return response.data;
+  },
+  setTournamentPhase: async (phase) => {
+    const response = await api.patch('/admin/tournament/phase', JSON.stringify(phase), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+  setPrizePool: async (amount) => {
+    const response = await api.patch('/admin/tournament/prize-pool', amount, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+  lockAllPredictions: async (isLocked) => {
+    const response = await api.patch('/admin/tournament/lock-predictions', isLocked, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+  confirmPayment: async (handle, amount) => {
+    const response = await api.post('/admin/confirm-payment', { handle, amount });
     return response.data;
   }
 };

@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageTitle } from '../components/ui/PageTitle';
 import { SectionLabel } from '../components/ui/SectionLabel';
 import { TeamBadge } from '../components/ui/TeamBadge';
-import { paymentService, predictionService } from '../services/api';
+import { predictionService } from '../services/api';
+import { SPECIAL_FIELDS, MATCHES } from '../data';
+import { ExportPDFLayout } from '../components/ExportPDFLayout';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function Ring({ value, label }) {
   const r = 42, c = 2 * Math.PI * r, off = c - (value / 100) * c;
@@ -48,18 +52,37 @@ function ptsTone(pts) {
   return { bg: "bg-danger/10 text-danger border-danger/20", label: "Errou" };
 }
 
-export function Desempenho({ user, ranking, setView, refreshProfile }) {
-  const [pixData, setPixData] = useState(null);
-  const [loadingPix, setLoadingPix] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }) {
   const [history, setHistory] = useState([]);
+  const [groupRanks, setGroupRanks] = useState([]);
+  const [matchPredictions, setMatchPredictions] = useState([]);
+  const [knockoutPredictions, setKnockoutPredictions] = useState([]);
+  const [clearConfirm, setClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const dashboardRef = useRef();
 
   useEffect(() => {
     predictionService.getPredictionHistory().then(setHistory).catch(() => {});
+    predictionService.getUserPredictions().then(d => {
+      setGroupRanks(d.groupRanks || []);
+      setMatchPredictions(d.matchPredictions || []);
+      setKnockoutPredictions(d.knockoutPredictions || []);
+    }).catch(() => {});
   }, []);
 
-  const pos = ranking.findIndex(u => u.handle === user.handle) + 1;
-  const pts = user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 };
+  const rankEntry = ranking.find(u => u.handle === user.handle);
+  const pos = ranking.indexOf(rankEntry) + 1;
+  
+  const pts = rankEntry ? {
+    total: rankEntry.total || 0,
+    groupPts: rankEntry.groupPts || 0,
+    knockoutPts: rankEntry.knockoutPts || 0,
+    specialPts: rankEntry.specialPts || 0,
+    exactCount: rankEntry.exactCount || 0,
+    exactRate: rankEntry.exactRate || 0
+  } : (user.points || { total: 0, groupPts: 0, knockoutPts: 0, specialPts: 0, exactCount: 0, exactRate: 0 });
+
   const total = pts.total;
 
   const leaderTotal = ranking.length > 0 ? ranking[0].total : 0;
@@ -69,88 +92,59 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
     ? history.reduce((a, b) => (b.points > a.points ? b : a), history[0])
     : null;
 
-  const handlePay = async () => {
-    setLoadingPix(true);
+  const handleClearAll = async () => {
+    setClearing(true);
+    try { await onClearAll?.(); } finally { setClearing(false); setClearConfirm(false); }
+  };
+
+  const hasAnyPrediction = matchPredictions.length > 0 || knockoutPredictions.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0;
+
+  const handleDownloadPDF = async () => {
+    if (!hasAnyPrediction) return;
+    setDownloading(true);
     try {
-      const data = await paymentService.generatePix();
-      setPixData(data);
+      const element = document.getElementById('pdf-export-layout-container');
+      element.style.display = 'block';
+
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      element.style.display = 'none';
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`meus-palpites-copa-2026-${user.handle}.pdf`);
     } catch (err) {
-      console.error("Failed to generate PIX:", err);
+      console.error("PDF generation failed:", err);
     } finally {
-      setLoadingPix(false);
+      setDownloading(false);
     }
-  };
-
-  const copyPix = () => {
-    if (!pixData) return;
-    navigator.clipboard.writeText(pixData.qrCodeCopyPaste);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshProfile();
-    setRefreshing(false);
   };
 
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
   return (
-    <div>
-      <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`}>Meu Desempenho</PageTitle>
-
-      {!user.isPaid && (
-        <Card className="mb-6 -mt-2 border-gold/40 bg-gold-dim/30">
-          <div className="flex flex-wrap items-center gap-4 justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-gold-400"><Icon name="alert" size={22} /></span>
-              <div>
-                <div className="font-cond font-bold text-gold-400">Pagamento pendente</div>
-                <div className="text-mute text-sm">Confirme sua inscrição para validar os pontos no ranking oficial.</div>
-              </div>
-            </div>
-            {!pixData && (
-              <Button variant="gold" size="sm" icon="wallet" onClick={handlePay} disabled={loadingPix}>
-                {loadingPix ? "Gerando..." : "Pagar inscrição · R$ 30"}
-              </Button>
-            )}
-          </div>
-
-          {pixData && (
-            <div className="mt-6 pt-6 border-t border-gold/20 flex flex-col md:flex-row items-center gap-8 fade-in overflow-hidden">
-              <div className="bg-white p-3 rounded-2xl shadow-lg shrink-0">
-                <img src={`data:image/jpeg;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" className="w-40 h-40" />
-              </div>
-              <div className="flex-1 min-w-0 w-full text-center md:text-left">
-                <h3 className="font-display text-xl text-cream mb-2">Escaneie o QR Code</h3>
-                <p className="text-mute text-sm mb-4">
-                  Ou copie e cole o código abaixo no aplicativo do seu banco para completar o pagamento de <strong>R$ 30,00</strong>.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 min-w-0 bg-bg/60 border border-edge rounded-xl px-4 py-3 font-mono text-[11px] text-mute overflow-hidden">
-                    <span className="block truncate">{pixData.qrCodeCopyPaste}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="secondary" icon="copy" onClick={copyPix}>
-                      Copiar
-                    </Button>
-                    <Button variant="primary" icon="refresh" onClick={handleRefresh} disabled={refreshing}>
-                      {refreshing ? "..." : "Já paguei"}
-                    </Button>
-                  </div>
-                </div>
-                <p className="mt-4 text-xs text-mute2 italic">
-                  * Após o pagamento, o status será atualizado automaticamente em alguns instantes.
-                </p>
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
+    <div ref={dashboardRef} className="bg-bg p-2 sm:p-4 rounded-3xl text-left">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+        <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`} className="mb-0">Meu Desempenho</PageTitle>
+        <Button variant="secondary" icon="download" disabled={downloading || !hasAnyPrediction} onClick={handleDownloadPDF}>
+          {downloading ? "Gerando PDF..." : "Baixar Palpites (PDF)"}
+        </Button>
+      </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <BigStat icon="zap" value={total} label="Pontos totais acumulados" />
         <BigStat icon="trophy" value={`${pos > 0 ? pos : '-'}º`} label={`Posição entre ${ranking.length} participantes`} tone="gold" />
-        <Card className="flex items-center justify-center">
+        <Card className="flex items-center justify-center text-center">
           <Ring value={Math.round(pts.exactRate * 100) || 0} label="PLACARES EXATOS" />
         </Card>
       </div>
@@ -178,75 +172,214 @@ export function Desempenho({ user, ranking, setView, refreshProfile }) {
 
         <Card accent>
           <SectionLabel icon="target">Resumo</SectionLabel>
-          <div className="space-y-3">
-            {[
-              ["Placares exatos acertados", `${pts.exactCount}`, "ball"],
-              ["Distância para o líder", distance, "arrowUpRight"],
-              ["Inscrição", user.isPaid ? "Confirmada" : "Pendente", "wallet"],
-            ].map(([l, v, ic]) => (
-              <div key={l} className="flex items-center justify-between py-2 border-b border-edge/50 last:border-0">
-                <span className="flex items-center gap-2.5 text-mute text-sm">
-                  <Icon name={ic} size={16} className="text-mute2" />{l}
-                </span>
-                <span className="font-cond font-bold text-cream">{v}</span>
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-mute">
+                <Icon name="ball" size={18} />
+                <span className="font-cond font-semibold text-sm">Placares exatos acertados</span>
               </div>
-            ))}
-
-            {bestPred && (
-              <div className="flex items-start justify-between py-2 border-t border-edge/50">
-                <span className="flex items-center gap-2.5 text-mute text-sm">
-                  <Icon name="star" size={16} className="text-gold" />Melhor palpite
-                </span>
-                <div className="text-right">
-                  <div className="font-cond font-bold text-cream text-sm">
-                    {bestPred.homeTeam} {bestPred.predictedHome}×{bestPred.predictedAway} {bestPred.awayTeam}
-                  </div>
-                  <div className="font-cond text-gold text-xs">{bestPred.points} pts</div>
-                </div>
+              <span className="font-display text-xl text-cream">{pts.exactCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-mute">
+                <Icon name="trendingUp" size={18} />
+                <span className="font-cond font-semibold text-sm">Distância para o líder</span>
               </div>
-            )}
+              <span className="font-display text-xl text-cream">{distance}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-mute">
+                <Icon name="star" size={18} />
+                <span className="font-cond font-semibold text-sm">Melhor palpite</span>
+              </div>
+              <div className="text-right">
+                {bestPred ? (
+                  <>
+                    <div className="font-cond font-bold text-xs text-cream leading-tight">
+                      {bestPred.homeTeam} {bestPred.predictedHome}×{bestPred.predictedAway} {bestPred.awayTeam}
+                    </div>
+                    <div className="text-gold font-cond font-bold text-[10px] uppercase">{bestPred.points} pts</div>
+                  </>
+                ) : <span className="text-mute2 text-sm">–</span>}
+              </div>
+            </div>
+            <Button variant="secondary" className="w-full" iconRight="arrowRight" onClick={() => setView("ranking")}>
+              Ver ranking completo
+            </Button>
           </div>
-          <Button variant="secondary" className="w-full mt-5" iconRight="arrowRight" onClick={() => setView("ranking")}>
-            Ver ranking completo
-          </Button>
         </Card>
       </div>
 
-      {history.length > 0 && (
-        <Card accent>
-          <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
-          <div className="divide-y divide-edge/40">
-            {history.map((item, i) => {
-              const tone = ptsTone(item.points);
-              return (
-                <div key={i} className="py-3 flex items-center gap-3">
-                  <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(item.matchDate)}</span>
-
-                  <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.homeTeam}</span>
-                    <TeamBadge name={item.homeTeam} showName={false} size="sm" />
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0 font-cond text-sm">
-                    <span className="text-mute2">{item.predictedHome}×{item.predictedAway}</span>
-                    <span className="text-mute2 mx-1 text-xs">→</span>
-                    <span className="text-cream font-bold">{item.realHome}×{item.realAway}</span>
-                  </div>
-
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <TeamBadge name={item.awayTeam} showName={false} size="sm" />
-                    <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.awayTeam}</span>
-                  </div>
-
-                  <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
-                    {item.points > 0 ? `+${item.points}` : "0"} pts
-                  </span>
-                </div>
-              );
-            })}
+      <Card className="border-danger/20 bg-danger/5">
+        <SectionLabel icon="alert" className="text-danger">Zona de perigo</SectionLabel>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="font-cond font-bold text-cream">Limpar todos os palpites</div>
+            <p className="text-mute2 text-xs">Remove placares, classificações, mata-mata e especiais. Irreversível.</p>
           </div>
+          {clearConfirm ? (
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setClearConfirm(false)}>Cancelar</Button>
+              <Button variant="danger" size="sm" onClick={handleClearAll} disabled={clearing}>
+                {clearing ? "Limpando..." : "Confirmar exclusão"}
+              </Button>
+            </div>
+          ) : (
+            <Button variant="danger" outline size="sm" onClick={() => setClearConfirm(true)}>Limpar tudo</Button>
+          )}
+        </div>
+      </Card>
+
+      {(history.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0 || matchPredictions.length > 0 || knockoutPredictions.length > 0) && (
+        <Card accent className="mt-6">
+          <SectionLabel icon="clock">Histórico de Palpites</SectionLabel>
+
+          {history.length > 0 && (
+            <div className="divide-y divide-edge/40 mb-6 text-left">
+              <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Jogos Encerrados</div>
+              {history.map((item, i) => {
+                const tone = ptsTone(item.points);
+                return (
+                  <div key={i} className="py-3 flex items-center gap-3">
+                    <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(item.matchDate)}</span>
+
+                    <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                      <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.homeTeam}</span>
+                      <TeamBadge name={item.homeTeam} showName={false} size="sm" />
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 font-cond text-sm">
+                      <span className="text-mute2">{item.predictedHome}×{item.predictedAway}</span>
+                      <span className="text-mute2 mx-1 text-xs">→</span>
+                      <span className="text-cream font-bold">{item.realHome}×{item.realAway}</span>
+                    </div>
+
+                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                      <TeamBadge name={item.awayTeam} showName={false} size="sm" />
+                      <span className="font-cond text-sm text-cream truncate hidden sm:block">{item.awayTeam}</span>
+                    </div>
+
+                    <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
+                      {item.points > 0 ? `+${item.points}` : "0"} pts
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {(matchPredictions.length > 0 || knockoutPredictions.length > 0 || groupRanks.length > 0 || Object.keys(specials).length > 0) && (
+            <div className={`${history.length > 0 ? "pt-4 border-t border-edge/40" : ""} space-y-6 text-left`}>
+              
+              {matchPredictions.length > 0 && (
+                <div>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Placares (Fase de Grupos)</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {matchPredictions.map(p => {
+                      const match = MATCHES.find(m => m.id === p.externalId || m.id === `m${p.matchId}`);
+                      if (!match) return null;
+                      return (
+                        <div key={p.id} className="bg-surface2/50 rounded-xl p-2 flex flex-col items-center gap-1 border border-edge/30">
+                          <div className="font-cond text-[9px] text-mute2 uppercase tracking-tighter">Grupo {match.group}</div>
+                          <div className="flex items-center gap-1.5 font-cond font-bold text-xs text-cream">
+                            <span>{match.homeCode}</span>
+                            <span className="bg-bg/60 px-1.5 rounded text-grass-400">{p.homeScore}×{p.awayScore}</span>
+                            <span>{match.awayCode}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {knockoutPredictions.length > 0 && (
+                <div>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Mata-Mata</div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {knockoutPredictions.map(p => (
+                      <div key={p.id} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2 border border-edge/30">
+                        <span className="text-grass-400 shrink-0"><Icon name="bracket" size={14} /></span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-cond text-[10px] text-mute2 uppercase tracking-wider leading-none mb-1">
+                            {p.externalId?.includes('r32') ? 'Oitavas' : 
+                             p.externalId?.includes('r16') ? 'Quartas' : 
+                             p.externalId?.includes('sf') ? 'Semifinal' : 'Final'}
+                          </div>
+                          <div className="font-cond font-bold text-xs text-cream truncate">
+                            {p.winnerTeam} <span className="text-mute2 font-normal ml-1">({p.homeScore}×{p.awayScore})</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {groupRanks.length > 0 && (
+                <div>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
+                  <div className="space-y-2">
+                    {groupRanks.map(g => {
+                      const tone = ptsTone(g.points || 0);
+                      return (
+                        <div key={g.group} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2">
+                          <span className="font-display text-cream w-5 shrink-0 text-sm">{g.group}</span>
+                          <div className="flex-1 font-cond text-xs text-cream space-y-0.5 min-w-0">
+                            <div className="truncate">1º {g.firstTeam} · 2º {g.secondTeam}</div>
+                            {(g.thirdTeam || g.fourthTeam) && (
+                              <div className="truncate text-mute2">3º {g.thirdTeam || '–'} · 4º {g.fourthTeam || '–'}</div>
+                            )}
+                          </div>
+                          <span className={`shrink-0 font-cond font-bold text-xs px-2.5 py-1 rounded-full border ${tone.bg}`}>
+                            {(g.points || 0) > 0 ? `+${g.points}` : "–"} pts
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {Object.keys(specials).length > 0 && (
+                <div>
+                  <div className="font-cond text-mute2 text-xs tracking-widest uppercase mb-2">Pódio & Premiações</div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {SPECIAL_FIELDS.map(f => {
+                      const val = specials[f.key];
+                      if (!val) return null;
+                      return (
+                        <div key={f.key} className="flex items-center gap-3 bg-surface2/50 rounded-xl px-3 py-2">
+                          <span className="text-gold shrink-0">
+                            <Icon name={f.kind === "team" ? "shield" : "star"} size={14} />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-cond text-[10px] text-mute2 uppercase tracking-wider leading-none mb-1">{f.label}</div>
+                            <div className="font-cond font-bold text-xs text-cream truncate">{val}</div>
+                          </div>
+                          <span className="shrink-0 font-cond font-bold text-mute2 text-[10px] px-2 py-0.5 rounded-full border border-edge/40">
+                            – pts
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
       )}
+
+      <div id="pdf-export-layout-container" style={{ display: 'none', position: 'absolute', top: 0, left: 0 }}>
+        <ExportPDFLayout 
+          user={user} 
+          matchPredictions={matchPredictions} 
+          groupRanks={groupRanks} 
+          knockoutPredictions={knockoutPredictions} 
+          specials={specials} 
+        />
+      </div>
     </div>
   );
 }

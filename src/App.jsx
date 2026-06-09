@@ -9,7 +9,7 @@ import { MataMata } from './screens/MataMata';
 import { Ranking } from './screens/Ranking';
 import { Desempenho } from './screens/Desempenho';
 import { Admin } from './screens/Admin';
-import { rankingService, authService, adminService, matchService, predictionService } from './services/api';
+import { rankingService, authService, adminService, matchService, predictionService, tournamentService } from './services/api';
 
 const STORE_KEY = "bolao2026_v1";
 
@@ -43,7 +43,13 @@ export default function App() {
   const saved = useRef(loadStore()).current;
 
   const [view, setView]             = useState(saved.view || "landing");
-  const [user, setUser]             = useState(saved.user || authService.getCurrentUser());
+  const [user, setUser]             = useState(localStorage.getItem('token') ? (saved.user || authService.getCurrentUser()) : null);
+
+  useEffect(() => {
+    const handle = () => { setUser(null); setView("landing"); };
+    window.addEventListener('auth:logout', handle);
+    return () => window.removeEventListener('auth:logout', handle);
+  }, []);
   const [scores, setScores]         = useState(saved.scores || {});
   const [ranks, setRanks]           = useState(saved.ranks || {});
   const [specials, setSpecials]     = useState(saved.specials || {});
@@ -52,11 +58,23 @@ export default function App() {
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
   const [koWinners, setKoWinners] = useState(saved.koWinners || {});
+  const [koScores, setKoScores] = useState(saved.koScores || {});
   const [thirds, setThirds] = useState(saved.thirds || {});
+  const [tournamentPhase, setTournamentPhase] = useState("GroupStage");
+  const [arePredictionsLocked, setArePredictionsLocked] = useState(false);
+  const [prizePool, setPrizePool] = useState(0);
 
   useEffect(() => {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners }));
-  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners]);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores }));
+  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores]);
+
+  useEffect(() => {
+    tournamentService.getInfo().then(d => {
+      setTournamentPhase(d.phase);
+      setPrizePool(d.prizePool ?? 0);
+      setArePredictionsLocked(d.arePredictionsLocked ?? false);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchRanking = async () => {
@@ -102,7 +120,7 @@ export default function App() {
         setRanks(prev => {
           const merged = { ...prev };
           data.groupRanks.forEach(g => {
-            merged[g.group] = { first: g.firstTeam, second: g.secondTeam };
+            merged[g.group] = { first: g.firstTeam, second: g.secondTeam, third: g.thirdTeam, fourth: g.fourthTeam };
           });
           return merged;
         });
@@ -116,11 +134,17 @@ export default function App() {
       }
       if (data.knockoutPredictions?.length > 0) {
         const winnerMap = {};
-        data.knockoutPredictions.forEach(({ externalId, winnerTeam }) => {
+        const scoreMap = {};
+        data.knockoutPredictions.forEach(({ externalId, winnerTeam, homeScore, awayScore }) => {
           const key = externalIdToWinnerKey(externalId);
-          if (key) winnerMap[key] = winnerTeam;
+          if (key) {
+            winnerMap[key] = winnerTeam;
+            if (homeScore != null && awayScore != null)
+              scoreMap[key] = { h: String(homeScore), a: String(awayScore) };
+          }
         });
         setKoWinners(prev => ({ ...prev, ...winnerMap }));
+        setKoScores(prev => ({ ...prev, ...scoreMap }));
       }
     }).catch(() => {});
   }, [user?.id]);
@@ -151,6 +175,16 @@ export default function App() {
     }
   }, [view]);
 
+  const handleClearAll = async () => {
+    await predictionService.clearAllPredictions();
+    setScores({});
+    setRanks({});
+    setSpecials({});
+    setKoWinners({});
+    setKoScores({});
+    setThirds({});
+  };
+
   const setScore = (id, side, val) => {
     const clean = val === "" ? "" : String(Math.max(0, Math.min(20, parseInt(val, 10) || 0)));
     setScores(s => ({ ...s, [id]: { ...(s[id] || {}), [side]: clean } }));
@@ -175,8 +209,10 @@ export default function App() {
 
   const logout = () => {
     authService.logout();
+    localStorage.removeItem(STORE_KEY);
     setUser(null);
     setKoWinners({});
+    setKoScores({});
     setView("landing");
   };
 
@@ -207,7 +243,7 @@ export default function App() {
     if (view === "pub_ranking")
       return (
         <PublicShell active="pub_ranking" go={setView}>
-          <Ranking ranking={realRanking} currentUser={{ handle: "__none__" }} />
+          <Ranking ranking={realRanking} currentUser={{ handle: "__none__" }} prizePool={prizePool} />
         </PublicShell>
       );
     if (view === "pub_regras")
@@ -227,13 +263,13 @@ export default function App() {
 
   let screen = null;
   switch (view) {
-    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} />; break;
-    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} thirds={thirds} setThirds={setThirds} onReset={() => setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; })} />; break;
-    case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} />; break;
-    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} refreshProfile={refreshProfile} />; break;
+    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} locked={arePredictionsLocked} />; break;
+    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} locked={arePredictionsLocked} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} locked={arePredictionsLocked} />; break;
+    case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
+    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} />; break;
     case "regras":     screen = <Regras />; break;
-    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} />; break;
+    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} arePredictionsLocked={arePredictionsLocked} setArePredictionsLocked={setArePredictionsLocked} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
   }
 

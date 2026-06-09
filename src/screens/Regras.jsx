@@ -40,17 +40,17 @@ export function Regras() {
             <RuleRow key={i} label={r.label} pts={r.pts} tone="green" last={i === SCORING.groups.length - 1} />
           ))}
           <p className="text-xs text-mute2 mt-3 leading-relaxed">
-            Você escolhe o 1º e o 2º colocado de cada um dos 12 grupos. Acertar a seleção <b className="text-mute">e</b> a posição vale 10 pts; acertar que ela se classifica, mas trocando a posição, vale 5 pts.
+            Você escolhe o 1º, 2º, 3º e 4º colocado de cada um dos 12 grupos. Acertar a seleção <b className="text-mute">e</b> a posição vale 20 pts; acertar que ela se classifica, mas trocando a posição, vale 5 pts.
           </p>
         </Card>
 
         <Card accent>
           <SectionLabel icon="target">Mata-mata</SectionLabel>
           {SCORING.knockout.map((r, i) => (
-            <RuleRow key={i} label={r.label} pts={r.pts} tone="green" last />
+            <RuleRow key={i} label={r.label} pts={r.pts} tone="green" last={i === SCORING.knockout.length - 1} />
           ))}
           <p className="text-xs text-mute2 mt-3 leading-relaxed">
-            A cada rodada eliminatória, cada seleção que você apontar corretamente como vencedora do confronto rende 10 pts.
+            A cada rodada eliminatória, acertar o vencedor do confronto vale 15 pts. Cravar o placar exato vale 20 pts.
           </p>
         </Card>
 
