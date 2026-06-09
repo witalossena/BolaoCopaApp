@@ -63,12 +63,12 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
   const dashboardRef = useRef();
 
   useEffect(() => {
-    predictionService.getPredictionHistory().then(setHistory).catch(() => {});
+    predictionService.getPredictionHistory().then(setHistory).catch(console.error);
     predictionService.getUserPredictions().then(d => {
       setGroupRanks(d.groupRanks || []);
       setMatchPredictions(d.matchPredictions || []);
       setKnockoutPredictions(d.knockoutPredictions || []);
-    }).catch(() => {});
+    }).catch(console.error);
   }, []);
 
   const rankEntry = ranking.find(u => u.handle === user.handle);

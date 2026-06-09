@@ -223,7 +223,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
     setBusy(`pay-${paymentUser.id}`);
     try {
       await adminService.confirmPayment(paymentUser.handle, amount);
-      togglePaid(paymentUser.id, amount > 0);
+      togglePaid({ id: paymentUser.id, isPaid: !(amount > 0) });
       
       // Update local prize pool state
       const oldAmount = paymentUser.paidAmount || 0;

@@ -30,7 +30,7 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {}, 
     if (hFilled && !aFilled) { a = "0"; onScore("a", "0"); }
     if (aFilled && !hFilled) { h = "0"; onScore("h", "0"); }
     predictionService.submitMatchPrediction(matchGuid, parseInt(h, 10), parseInt(a, 10))
-      .catch(console.error);
+      .catch(err => console.error('[Palpites] submitMatchPrediction failed:', err));
   };
 
   const inputCls = `w-12 h-11 text-center text-lg font-cond font-bold rounded-lg border outline-none transition
@@ -119,7 +119,7 @@ function GroupRanks({ group, ranks, setRank, locked = false }) {
     const updated = { ...r, [key]: val };
     const { first, second, third, fourth } = updated;
     if (first && second) {
-      predictionService.submitGroupRankPrediction(group.id, first, second, third, fourth).catch(console.error);
+      predictionService.submitGroupRankPrediction(group.id, first, second, third, fourth).catch(err => console.error('[Palpites] submitGroupRankPrediction failed:', err));
     }
   };
 

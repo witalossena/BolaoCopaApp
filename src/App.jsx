@@ -43,30 +43,30 @@ export default function App() {
   const saved = useRef(loadStore()).current;
 
   const [view, setView]             = useState(saved.view || "landing");
-  const [user, setUser]             = useState(localStorage.getItem('token') ? (saved.user || authService.getCurrentUser()) : null);
+  const [user, setUser]             = useState(localStorage.getItem('token') ? authService.getCurrentUser() : null);
 
   useEffect(() => {
     const handle = () => { setUser(null); setView("landing"); };
     window.addEventListener('auth:logout', handle);
     return () => window.removeEventListener('auth:logout', handle);
   }, []);
-  const [scores, setScores]         = useState(saved.scores || {});
-  const [ranks, setRanks]           = useState(saved.ranks || {});
-  const [specials, setSpecials]     = useState(saved.specials || {});
-  const [adminUsers, setAdminUsers] = useState(saved.adminUsers || null);
+  const [scores, setScores]         = useState({});
+  const [ranks, setRanks]           = useState({});
+  const [specials, setSpecials]     = useState({});
+  const [adminUsers, setAdminUsers] = useState(null);
   const [realRanking, setRealRanking] = useState([]);
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
-  const [koWinners, setKoWinners] = useState(saved.koWinners || {});
-  const [koScores, setKoScores] = useState(saved.koScores || {});
-  const [thirds, setThirds] = useState(saved.thirds || {});
+  const [koWinners, setKoWinners] = useState({});
+  const [koScores, setKoScores] = useState({});
+  const [thirds, setThirds] = useState({});
   const [tournamentPhase, setTournamentPhase] = useState("GroupStage");
   const [arePredictionsLocked, setArePredictionsLocked] = useState(false);
   const [prizePool, setPrizePool] = useState(0);
 
   useEffect(() => {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores }));
-  }, [view, user, scores, ranks, specials, adminUsers, thirds, koWinners, koScores]);
+    localStorage.setItem(STORE_KEY, JSON.stringify({ view }));
+  }, [view]);
 
   useEffect(() => {
     tournamentService.getInfo().then(d => {

@@ -141,7 +141,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     if (matchGuid) {
       const h = score?.h !== "" && score?.h != null ? parseInt(score.h, 10) : null;
       const a = score?.a !== "" && score?.a != null ? parseInt(score.a, 10) : null;
-      predictionService.submitKnockoutPrediction(matchGuid, team, h, a).catch(console.error);
+      predictionService.submitKnockoutPrediction(matchGuid, team, h, a).catch(err => console.error('[MataMata] submitKnockoutPrediction failed:', err));
     } else {
       console.warn(`[MataMata] matchIdMap missing entry for ${externalId} — pick saved locally only`);
     }
@@ -180,7 +180,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
     const externalId = getExternalId(round, m);
     const matchGuid = matchIdMap[externalId];
     if (matchGuid) {
-      predictionService.submitKnockoutPrediction(matchGuid, w, parseInt(score.h, 10), parseInt(score.a, 10)).catch(console.error);
+      predictionService.submitKnockoutPrediction(matchGuid, w, parseInt(score.h, 10), parseInt(score.a, 10)).catch(err => console.error('[MataMata] submitKoScore failed:', err));
     }
   };
 
@@ -191,7 +191,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
       ranks?.[groupId]?.first || "",
       ranks?.[groupId]?.second || "",
       team || ""
-    ).catch(console.error);
+    ).catch(err => console.error('[MataMata] submitGroupRankPrediction failed:', err));
   };
 
   const matchesIn = (round) => 16 / Math.pow(2, round);
@@ -282,7 +282,7 @@ export function MataMata({ ranks = {}, matchIdMap = {}, winners = {}, setWinners
             <div className="font-cond text-mute text-xs tracking-widest uppercase">Seu campeão</div>
             <div className="font-display text-2xl text-gold-400">{champion}</div>
           </div>
-          <button onClick={() => { setWinners({}); setKoScores({}); onReset?.(); predictionService.clearKnockoutPredictions().catch(console.error); }}
+          <button onClick={() => { setWinners({}); setKoScores({}); onReset?.(); predictionService.clearKnockoutPredictions().catch(err => console.error('[MataMata] clearKnockoutPredictions failed:', err)); }}
             disabled={locked}
             className="ml-auto font-cond text-sm text-mute hover:text-cream flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" type="button">
             <Icon name="refresh" size={15} />Recomeçar
