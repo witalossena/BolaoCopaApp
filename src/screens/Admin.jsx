@@ -124,12 +124,13 @@ function UserPredictionsModal({ user, matches, onClose }) {
               </div>
             )}
 
-            {predictions.specialPredictions && Object.keys(predictions.specialPredictions).length > 0 && (
+            {predictions.specials && (
               <div className="pt-6">
                 <div className="font-cond font-semibold text-gold text-xs tracking-widest uppercase mb-3">Pódio & Premiações</div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {SPECIAL_FIELDS.map(f => {
-                    const val = predictions.specialPredictions[f.key];
+                    const BACKEND_KEY = { campeao: 'champion', vice: 'runnerUp', terceiro: 'thirdPlace', artilheiro: 'topScorer', assist: 'mostAssists', mvp: 'mvp', goldenboy: 'goldenBoy' };
+                    const val = predictions.specials[BACKEND_KEY[f.key]];
                     if (!val) return null;
                     return (
                       <div key={f.key} className="flex items-center gap-2 bg-surface2 rounded-xl px-3 py-2.5">
@@ -148,7 +149,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
               </div>
             )}
 
-            {!predictions.matchPredictions?.length && !predictions.groupRanks?.length && !predictions.knockoutPredictions?.length && !Object.keys(predictions.specialPredictions || {}).length && (
+            {!predictions.matchPredictions?.length && !predictions.groupRanks?.length && !predictions.knockoutPredictions?.length && !predictions.specials && (
               <div className="text-center text-mute2 font-cond py-8">Nenhuma aposta registrada.</div>
             )}
           </>)}
