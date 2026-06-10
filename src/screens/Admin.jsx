@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TOTAL_MATCHES, GROUP_ORDER, GROUPS } from '../data';
+import { TOTAL_MATCHES, GROUP_ORDER, GROUPS, SPECIAL_FIELDS } from '../data';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -40,26 +40,31 @@ function UserPredictionsModal({ user, matches, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-bg/80 backdrop-blur-sm" />
-      <div className="relative bg-surface border border-edge rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-card"
+      <div className="relative bg-surface border border-edge rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-card"
         onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-surface border-b border-edge px-5 py-4 flex items-center justify-between rounded-t-2xl">
-          <div>
-            <div className="font-display text-lg text-cream">{user.name}</div>
-            <div className="text-mute2 text-xs font-cond">{user.handle}</div>
+        <div className="sticky top-0 bg-surface border-b border-edge px-5 py-4 flex items-center justify-between rounded-t-2xl z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-surface2 border border-edge grid place-items-center text-grass-400">
+              <Icon name="user" size={16} />
+            </div>
+            <div>
+              <div className="font-display text-lg text-cream leading-tight">{user.name}</div>
+              <div className="text-mute2 text-xs font-cond">{user.handle}</div>
+            </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-xl border border-edge bg-surface2 grid place-items-center text-mute hover:text-cream transition">
             <Icon name="x" size={14} />
           </button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-6 divide-y divide-edge/40">
           {loading && <div className="text-center text-mute2 font-cond py-8">Carregando apostas...</div>}
           {error && <div className="text-center text-danger font-cond py-8">{error}</div>}
 
           {predictions && (<>
             {predictions.matchPredictions?.length > 0 && (
-              <div>
-                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Apostas de Partidas</div>
+              <div className="pt-0">
+                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Apostas de Partidas</div>
                 <div className="space-y-1.5">
                   {predictions.matchPredictions.map(p => {
                     const m = matchMap[p.externalId];
@@ -82,8 +87,8 @@ function UserPredictionsModal({ user, matches, onClose }) {
             )}
 
             {predictions.groupRanks?.length > 0 && (
-              <div>
-                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Classificação de Grupos</div>
+              <div className="pt-6">
+                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Classificação de Grupos</div>
                 <div className="space-y-1.5">
                   {predictions.groupRanks.map(g => (
                     <div key={g.group} className="bg-surface2 rounded-xl px-4 py-2.5 flex items-start gap-3">
@@ -103,8 +108,8 @@ function UserPredictionsModal({ user, matches, onClose }) {
             )}
 
             {predictions.knockoutPredictions?.length > 0 && (
-              <div>
-                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-2">Mata-Mata</div>
+              <div className="pt-6">
+                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Mata-Mata</div>
                 <div className="space-y-1.5">
                   {predictions.knockoutPredictions.map(k => {
                     const m = matchMap[k.externalId];
@@ -119,7 +124,31 @@ function UserPredictionsModal({ user, matches, onClose }) {
               </div>
             )}
 
-            {!predictions.matchPredictions?.length && !predictions.groupRanks?.length && !predictions.knockoutPredictions?.length && (
+            {predictions.specialPredictions && Object.keys(predictions.specialPredictions).length > 0 && (
+              <div className="pt-6">
+                <div className="font-cond font-semibold text-gold text-xs tracking-widest uppercase mb-3">Pódio & Premiações</div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {SPECIAL_FIELDS.map(f => {
+                    const val = predictions.specialPredictions[f.key];
+                    if (!val) return null;
+                    return (
+                      <div key={f.key} className="flex items-center gap-2 bg-surface2 rounded-xl px-3 py-2.5">
+                        <span className="text-gold shrink-0">
+                          <Icon name={f.kind === "team" ? "shield" : "star"} size={13} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-cond text-[10px] text-mute2 uppercase tracking-wider leading-none mb-0.5">{f.label}</div>
+                          <div className="font-cond font-bold text-xs text-cream truncate">{val}</div>
+                        </div>
+                        <span className="shrink-0 font-cond text-[10px] text-mute2">{f.pts}pts</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!predictions.matchPredictions?.length && !predictions.groupRanks?.length && !predictions.knockoutPredictions?.length && !Object.keys(predictions.specialPredictions || {}).length && (
               <div className="text-center text-mute2 font-cond py-8">Nenhuma aposta registrada.</div>
             )}
           </>)}
