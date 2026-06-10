@@ -17,9 +17,6 @@ function getThirdCandidates(koWinners) {
   return [sf0Loser, sf1Loser].filter(Boolean);
 }
 
-// Keys that are auto-filled from the bracket
-const BRACKET_KEYS = new Set(["campeao", "vice"]);
-
 const STAR_PLAYERS = [
   "Kylian Mbappé","Vinícius Júnior","Erling Haaland","Jude Bellingham","Lionel Messi",
   "Lamine Yamal","Harry Kane","Rodrygo","Pedri","Florian Wirtz","Bukayo Saka",
@@ -45,7 +42,7 @@ const GOLDEN_BOY_CANDIDATES = [
   { name: "Gilberto Mora", team: "México", pos: "Meio-campista" },
 ];
 
-function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions = null, locked = false }) {
+function SpecialCard({ field, value, onChange, teamOptions = null, locked = false }) {
   const teams = teamOptions || ALL_TEAMS;
 
   if (field.key === "goldenboy") {
@@ -83,11 +80,6 @@ function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions 
               <Icon name={field.kind === "team" ? "shield" : "star"} size={16} />
             </span>
             {field.label}
-            {fromBracket && (
-              <span className="text-[10px] font-cond font-semibold tracking-wider text-grass-400 border border-grass/30 rounded px-1.5 py-0.5 leading-none">
-                DO BRACKET
-              </span>
-            )}
           </h3>
           <p className="text-mute2 text-xs mt-0.5">{field.hint}</p>
         </div>
@@ -119,7 +111,6 @@ export function Especiais({ specials, setSpecial, koWinners = {}, locked = false
   const awards = SPECIAL_FIELDS.filter(f => f.kind === "player");
   const totalPot = SPECIAL_FIELDS.reduce((s, f) => s + f.pts, 0);
   const filled = SPECIAL_FIELDS.filter(f => specials[f.key]).length;
-  const bracketFilled = SPECIAL_FIELDS.filter(f => BRACKET_KEYS.has(f.key) && specials[f.key]).length;
 
   return (
     <div>
@@ -130,9 +121,7 @@ export function Especiais({ specials, setSpecial, koWinners = {}, locked = false
           <span className="text-gold"><Icon name="sparkles" size={24} /></span>
           <div>
             <div className="font-cond font-semibold text-cream">Estas são as apostas que mais valem pontos.</div>
-            <div className="text-mute2 text-sm">{filled} de {SPECIAL_FIELDS.length} preenchidos
-              {bracketFilled > 0 && <span className="text-grass-400"> · {bracketFilled} do bracket</span>}
-            </div>
+            <div className="text-mute2 text-sm">{filled} de {SPECIAL_FIELDS.length} preenchidos</div>
           </div>
         </div>
         <div className="text-right">
@@ -149,7 +138,6 @@ export function Especiais({ specials, setSpecial, koWinners = {}, locked = false
             field={f}
             value={specials[f.key]}
             onChange={v => setSpecial(f.key, v)}
-            fromBracket={BRACKET_KEYS.has(f.key) && !!specials[f.key]}
             teamOptions={f.key === "terceiro" && thirdCandidates.length === 2 ? thirdCandidates : null}
             locked={locked}
           />
