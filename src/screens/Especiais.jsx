@@ -102,7 +102,7 @@ function SpecialCard({ field, value, onChange, fromBracket = false, teamOptions 
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mute2">
             <Icon name="user" size={16} />
           </span>
-          <input list="star-players" value={value || ""} onChange={e => onChange(e.target.value)}
+          <input value={value || ""} onChange={e => onChange(e.target.value)}
             disabled={locked}
             placeholder="Nome do jogador"
             className="w-full bg-bg/70 border border-edge focus:border-grass rounded-xl py-2.5 pl-10 pr-3 text-sm font-cond font-semibold text-cream placeholder-mute2 outline-none focus:ring-2 focus:ring-grass/25 transition disabled:opacity-60 disabled:cursor-not-allowed" />
@@ -123,11 +123,7 @@ export function Especiais({ specials, setSpecial, koWinners = {}, locked = false
 
   return (
     <div>
-      <datalist id="star-players">
-        {STAR_PLAYERS.map(p => <option key={p} value={p} />)}
-      </datalist>
-
-      <PageTitle kicker="Pódio &amp; premiações">Palpites Especiais</PageTitle>
+<PageTitle kicker="Pódio &amp; premiações">Palpites Especiais</PageTitle>
 
       <Card pad={false} className="p-4 mb-6 -mt-2 flex flex-wrap items-center gap-4 justify-between">
         <div className="flex items-center gap-3">
