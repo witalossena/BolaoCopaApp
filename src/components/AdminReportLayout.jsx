@@ -75,10 +75,9 @@ export function AdminReportLayout({ usersData }) {
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
               <StatBox label="Partidas apostadas" done={matchIds.size} total={GROUP_MATCHES.length} />
               <StatBox label="Grupos classificados" done={groupIds.size} total={GROUPS.length} />
-              <StatBox label="Mata-mata" done={knockoutPreds.length} total={null} />
               <StatBox label="Especiais" done={presentSpecials.length} total={SPECIAL_FIELDS.length} />
             </div>
 
@@ -159,10 +158,10 @@ export function AdminReportLayout({ usersData }) {
                         : gMatches.map(p => {
                             const m = GROUP_MATCHES.find(mm => mm.id === p.externalId);
                             return (
-                              <div key={p.externalId} style={{ padding: '3px 10px', fontSize: 10, display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f3f4f6' }}>
-                                <span style={{ color: '#6b7280' }}>{m?.home || p.externalId}</span>
-                                <span style={{ fontWeight: 700, color: '#111', letterSpacing: '0.05em' }}>{p.homeScore} × {p.awayScore}</span>
-                                <span style={{ color: '#6b7280', textAlign: 'right' }}>{m?.away || ''}</span>
+                              <div key={p.externalId} style={{ padding: '3px 10px', fontSize: 10, display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 4, alignItems: 'center', borderTop: '1px solid #f3f4f6' }}>
+                                <span style={{ color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m?.home || p.externalId}</span>
+                                <span style={{ fontWeight: 700, color: '#111', letterSpacing: '0.05em', textAlign: 'center', whiteSpace: 'nowrap' }}>{p.homeScore} × {p.awayScore}</span>
+                                <span style={{ color: '#6b7280', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m?.away || ''}</span>
                               </div>
                             );
                           })}
@@ -207,8 +206,8 @@ export function AdminReportLayout({ usersData }) {
                   </div>
                 )}
 
-                {knockoutPreds.length === 0 && presentSpecials.length === 0 && (
-                  <div style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>Nenhum mata-mata ou especial registrado.</div>
+                {presentSpecials.length === 0 && (
+                  <div style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>Nenhum especial registrado.</div>
                 )}
               </div>
             </div>
