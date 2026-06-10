@@ -62,29 +62,43 @@ function UserPredictionsModal({ user, matches, onClose }) {
           {error && <div className="text-center text-danger font-cond py-8">{error}</div>}
 
           {predictions && (<>
-            {predictions.matchPredictions?.length > 0 && (
-              <div className="pt-0">
-                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Apostas de Partidas</div>
-                <div className="space-y-1.5">
-                  {predictions.matchPredictions.map(p => {
-                    const m = matchMap[p.externalId];
-                    return (
-                      <div key={p.externalId} className="flex items-center gap-2 bg-surface2 rounded-xl px-4 py-2.5">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
-                          <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
-                        </div>
-                        <span className="font-display text-cream text-sm shrink-0 w-14 text-center">{p.homeScore} × {p.awayScore}</span>
-                        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                          <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
-                          {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
+            {predictions.matchPredictions?.length > 0 && (() => {
+              const byGroup = {};
+              predictions.matchPredictions.forEach(p => {
+                const m = matchMap[p.externalId];
+                const g = m?.group || '?';
+                if (!byGroup[g]) byGroup[g] = [];
+                byGroup[g].push({ p, m });
+              });
+              const groupKeys = Object.keys(byGroup).sort();
+              return (
+                <div className="pt-0">
+                  <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Apostas de Partidas</div>
+                  <div className="space-y-4">
+                    {groupKeys.map(g => (
+                      <div key={g}>
+                        <div className="font-cond text-[10px] text-mute2 uppercase tracking-widest mb-1.5 px-1">Grupo {g}</div>
+                        <div className="space-y-1.5">
+                          {byGroup[g].map(({ p, m }) => (
+                            <div key={p.externalId} className="flex items-center gap-2 bg-surface2 rounded-xl px-4 py-2.5">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
+                                <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
+                              </div>
+                              <span className="font-display text-cream text-sm shrink-0 w-14 text-center">{p.homeScore} × {p.awayScore}</span>
+                              <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                                <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
+                                {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {predictions.groupRanks?.length > 0 && (
               <div className="pt-6">
