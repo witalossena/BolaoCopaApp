@@ -163,6 +163,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
+    if (tournamentPhase !== "GroupStage") return;
     const hasAny = Object.values(specials).some(v => v && v.trim());
     if (!hasAny) return;
     if (specialsDebounceRef.current) clearTimeout(specialsDebounceRef.current);
@@ -178,10 +179,11 @@ export default function App() {
         goldenBoy: specials.goldenboy || null,
       }).catch(err => console.error('Failed to save specials:', err));
     }, 800);
-  }, [specials, user]);
+  }, [specials, user, tournamentPhase]);
 
-  // Sync bracket picks → specials for derivable team fields
+  // Sync bracket picks → specials for derivable team fields (group stage only)
   useEffect(() => {
+    if (tournamentPhase !== "GroupStage") return;
     const champion = koWinners["4-0"];
     const sf0Winner = koWinners["3-0"];
     const sf1Winner = koWinners["3-1"];
@@ -190,7 +192,7 @@ export default function App() {
       const vice = champion === sf0Winner ? sf1Winner : sf0Winner;
       setSpecials(s => ({ ...s, vice }));
     }
-  }, [koWinners["4-0"], koWinners["3-0"], koWinners["3-1"]]);
+  }, [koWinners["4-0"], koWinners["3-0"], koWinners["3-1"], tournamentPhase]);
 
   useEffect(() => {
     if (view === "admin") {
