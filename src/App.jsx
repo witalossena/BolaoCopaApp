@@ -294,8 +294,8 @@ export default function App() {
 
   let screen = null;
   switch (view) {
-    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} locked={arePredictionsLocked} />; break;
-    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} locked={arePredictionsLocked} />; break;
+    case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} locked={arePredictionsLocked || tournamentPhase !== "GroupStage"} />; break;
+    case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} locked={arePredictionsLocked || tournamentPhase !== "GroupStage"} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} locked={arePredictionsLocked} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} />; break;
