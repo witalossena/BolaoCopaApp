@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TOTAL_MATCHES, GROUP_ORDER, GROUPS, SPECIAL_FIELDS } from '../data';
+import { AdminReportLayout } from '../components/AdminReportLayout';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -193,6 +194,9 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
   const [localPrizePool, setLocalPrizePool] = useState(prizePool);
   const [savingPrize, setSavingPrize] = useState(false);
   const [lockingAll, setLockingAll] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   useEffect(() => { setLocalPrizePool(prizePool); }, [prizePool]);
 
   useEffect(() => {
@@ -388,6 +392,23 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
       showToast("Erro ao alterar status.");
     } finally {
       setLockingMatch(null);
+    }
+  };
+
+  const handlePrintReport = async () => {
+    if (!allUsers?.length) return;
+    setLoadingReport(true);
+    try {
+      const results = await Promise.allSettled(
+        allUsers.map(u => adminService.getUserPredictions(u.id).then(p => ({ user: u, predictions: p })))
+      );
+      const usersData = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+      setReportData(usersData);
+      setShowReport(true);
+    } catch {
+      showToast("Erro ao gerar relatório.");
+    } finally {
+      setLoadingReport(false);
     }
   };
 
@@ -721,7 +742,12 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
       <Card pad={false} className="overflow-hidden">
         <div className="px-5 py-3.5 border-b border-edge flex items-center justify-between">
           <h2 className="font-display text-lg text-cream">Participantes</h2>
-          <span className="font-cond text-mute2 text-sm">{total} no total</span>
+          <div className="flex items-center gap-3">
+            <span className="font-cond text-mute2 text-sm">{total} no total</span>
+            <Button size="sm" variant="secondary" icon="printer" onClick={handlePrintReport} disabled={loadingReport || !allUsers?.length}>
+              {loadingReport ? "Carregando..." : "Relatório"}
+            </Button>
+          </div>
         </div>
         <div className="grid grid-cols-[1fr_48px_32px_72px_36px] sm:grid-cols-[1fr_100px_130px_100px_80px] gap-x-3 px-5 py-2.5 border-b border-edge bg-surface2/40">
           {["Participante", "Total", "Status", "Ação", ""].map((h, i) => (
@@ -781,6 +807,33 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
           onClose={() => setPaymentUser(null)} 
           onConfirm={handleConfirmPayment} 
         />
+      )}
+
+      {showReport && reportData && (
+        <div className="fixed inset-0 z-50 bg-white overflow-y-auto" id="admin-report-printable">
+          <div id="admin-report-no-print" className="sticky top-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between" style={{ zIndex: 10 }}>
+            <div className="font-semibold text-gray-800 text-sm">
+              Relatório de Apostas — {reportData.length} participante{reportData.length !== 1 ? 's' : ''}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition"
+              >
+                <Icon name="printer" size={15} />
+                Imprimir / Salvar PDF
+              </button>
+              <button
+                onClick={() => setShowReport(false)}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+              >
+                <Icon name="x" size={15} />
+                Fechar
+              </button>
+            </div>
+          </div>
+          <AdminReportLayout usersData={reportData} />
+        </div>
       )}
 
       {toast && (

@@ -40,3 +40,10 @@ select option { background: #0f1d14; color: #f4efe2; }
 
 .pop { animation: pop .25s cubic-bezier(.2,.9,.3,1.2) forwards; }
 @keyframes pop { from { transform: scale(.94); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+
+@media print {
+  body * { visibility: hidden; }
+  #admin-report-printable, #admin-report-printable * { visibility: visible; }
+  #admin-report-printable { position: fixed; inset: 0; background: white; z-index: 99999; overflow: visible; }
+  #admin-report-no-print { display: none !important; }
+}
