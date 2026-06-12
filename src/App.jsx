@@ -244,6 +244,9 @@ export default function App() {
       setAdminUsers(prev => prev.map(u =>
         u.id === target.id ? { ...u, isPredictionUnlocked: newStatus } : u
       ));
+      if (user?.id === target.id) {
+        setUser(u => ({ ...u, isPredictionUnlocked: newStatus }));
+      }
     } catch (err) {
       console.error("Failed to toggle prediction unlock:", err);
     }
