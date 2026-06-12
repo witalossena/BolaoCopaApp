@@ -132,6 +132,10 @@ export const adminService = {
     const response = await api.post('/admin/match-result', { matchId, homeScore, awayScore });
     return response.data;
   },
+  updateLiveScore: async (matchId, homeScore, awayScore) => {
+    const response = await api.patch(`/admin/matches/${matchId}/live-score`, { homeScore, awayScore });
+    return response.data;
+  },
   calculateScores: async () => {
     const response = await api.post('/admin/calculate-scores');
     return response.data;

@@ -14,7 +14,8 @@ import { TEAMS } from '../data';
 function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {}, globalLocked = false }) {
   const apiStatus = matchStatuses[match.id];
   const effectiveStatus = apiStatus || match.status;
-  const locked = globalLocked || effectiveStatus === "locked";
+  const locked = globalLocked || effectiveStatus === "locked" || effectiveStatus === "live";
+  const live = !globalLocked && effectiveStatus === "live";
   const soon = !locked && effectiveStatus === "soon";
   const homeRef = useRef();
   const awayRef = useRef();
@@ -74,6 +75,11 @@ function MatchRow({ match, score, onScore, matchStatuses = {}, matchIdMap = {}, 
             <>
               <span className="sm:hidden text-gold"><Icon name="alert" size={14} /></span>
               <span className="hidden sm:block"><Badge tone="amber" icon="alert">Incompleto</Badge></span>
+            </>
+          ) : live ? (
+            <>
+              <span className="sm:hidden text-danger"><Icon name="radio" size={14} /></span>
+              <span className="hidden sm:block"><Badge tone="live" icon="radio">Ao vivo</Badge></span>
             </>
           ) : (
             <>

@@ -379,6 +379,25 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
     }
   };
 
+  const saveLiveScore = async (matchId) => {
+    const s = localScores[matchId];
+    if (!s || s.h === "" || s.a === "") return;
+    setSavingMatch(matchId);
+    try {
+      await adminService.updateLiveScore(matchId, parseInt(s.h, 10), parseInt(s.a, 10));
+      setMatches(prev => prev.map(m =>
+        m.id === matchId
+          ? { ...m, status: "Live", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10) }
+          : m
+      ));
+      showToast("Placar ao vivo atualizado.");
+    } catch {
+      showToast("Erro ao atualizar placar.");
+    } finally {
+      setSavingMatch(null);
+    }
+  };
+
   const toggleLock = async (m) => {
     const newLocked = m.status !== "Locked";
     setLockingMatch(m.id);
@@ -577,10 +596,20 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
                   <Icon name="lock" size={13} />
                 </button>
               );
+              const liveBtn = (
+                <button onClick={() => saveLiveScore(m.id)} disabled={!canSave || savingMatch === m.id}
+                  title="Atualizar placar ao vivo (sem encerrar)"
+                  className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                    ${m.status === "Live"
+                      ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                      : "bg-surface2 border-edge text-mute hover:text-danger hover:border-danger/40"}`}>
+                  <Icon name="radio" size={13} />
+                </button>
+              );
               const saveBtn = (
                 <Button size="sm" variant={hasResult ? "secondary" : "primary"}
                   className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
-                  {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
+                  {savingMatch === m.id ? "..." : hasResult ? "Finalizar" : "Salvar"}
                 </Button>
               );
               const resetBtn = hasResult && (
@@ -611,7 +640,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
                       <TeamBadge name={m.awayTeam} showName={false} size="sm" />
                       <span className="font-cond text-sm text-cream truncate hidden sm:block">{m.awayTeam}</span>
                     </div>
-                    {lockBtn}{saveBtn}{resetBtn}
+                    {lockBtn}{liveBtn}{saveBtn}{resetBtn}
                   </div>
                 </div>
               );
