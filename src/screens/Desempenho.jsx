@@ -52,7 +52,7 @@ function ptsTone(pts) {
   return { bg: "bg-danger/10 text-danger border-danger/20", label: "Errou" };
 }
 
-export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }) {
+export function Desempenho({ user, ranking, setView, onClearAll, specials = {}, locked = false }) {
   const [history, setHistory] = useState([]);
   const [groupRanks, setGroupRanks] = useState([]);
   const [matchPredictions, setMatchPredictions] = useState([]);
@@ -215,9 +215,14 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {} }
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="font-cond font-bold text-cream">Limpar todos os palpites</div>
-            <p className="text-mute2 text-xs">Remove placares, classificações, mata-mata e especiais. Irreversível.</p>
+            {locked
+              ? <p className="text-mute2 text-xs">Não é possível apagar palpites após o início dos jogos.</p>
+              : <p className="text-mute2 text-xs">Remove placares, classificações, mata-mata e especiais. Irreversível.</p>
+            }
           </div>
-          {clearConfirm ? (
+          {locked ? (
+            <Button variant="danger" outline size="sm" disabled>Limpar tudo</Button>
+          ) : clearConfirm ? (
             <div className="flex gap-2">
               <Button variant="secondary" size="sm" onClick={() => setClearConfirm(false)}>Cancelar</Button>
               <Button variant="danger" size="sm" onClick={handleClearAll} disabled={clearing}>

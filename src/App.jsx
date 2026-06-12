@@ -288,7 +288,7 @@ export default function App() {
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} locked={arePredictionsLocked || tournamentPhase !== "GroupStage"} />; break;
     case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} locked={arePredictionsLocked} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
-    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} />; break;
+    case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} locked={arePredictionsLocked || Object.values(matchStatuses).some(s => s !== "open")} />; break;
     case "regras":     screen = <Regras />; break;
     case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} arePredictionsLocked={arePredictionsLocked} setArePredictionsLocked={setArePredictionsLocked} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
