@@ -1,11 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { PageTitle } from '../components/ui/PageTitle';
 import { Badge } from '../components/ui/Badge';
 
+const LS_KEY = 'bolao_prev_ranking';
+
+function usePositionDeltas(ranking) {
+  const [deltas, setDeltas] = useState({});
+  const savedRef = useRef(false);
+
+  useEffect(() => {
+    if (!ranking?.length || savedRef.current) return;
+    savedRef.current = true;
+
+    const current = {};
+    ranking.forEach((u, i) => { current[u.handle] = i + 1; });
+
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const prev = JSON.parse(raw);
+        const d = {};
+        ranking.forEach(u => {
+          if (prev[u.handle] != null) d[u.handle] = prev[u.handle] - current[u.handle];
+        });
+        setDeltas(d);
+      }
+      localStorage.setItem(LS_KEY, JSON.stringify(current));
+    } catch {}
+  }, [ranking]);
+
+  return deltas;
+}
+
 export function Ranking({ ranking, currentUser, prizePool = 0 }) {
   const [mode, setMode] = useState("geral"); // geral or premium
+  const deltas = usePositionDeltas(ranking);
   const medal = ["#e3b23c", "#c9c9c9", "#cd7f4a"];
 
   const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -113,11 +144,21 @@ export function Ranking({ ranking, currentUser, prizePool = 0 }) {
               className={`grid items-center px-4 sm:px-5 py-3.5 border-b border-edge/40 last:border-0 transition
                 grid-cols-[44px_1fr_80px_110px] sm:grid-cols-[56px_1fr_90px_96px_110px]
                 ${me ? "bg-grass-dim/40" : "hover:bg-surface2/40"}`}>
-              <div className="flex items-center">
+              <div className="flex items-center gap-1">
                 {i < 3 ? (
                   <span style={{ color: medal[i] }}><Icon name="trophy" size={20} /></span>
                 ) : (
                   <span className="font-display text-mute text-base pl-1">{i + 1}</span>
+                )}
+                {deltas[u.handle] > 0 && (
+                  <span className="text-grass-400 flex items-center" title={`+${deltas[u.handle]} posição`}>
+                    <Icon name="trend-up" size={12} strokeWidth={2.5} />
+                  </span>
+                )}
+                {deltas[u.handle] < 0 && (
+                  <span className="text-danger flex items-center" title={`${deltas[u.handle]} posição`}>
+                    <Icon name="trend-down" size={12} strokeWidth={2.5} />
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-3 min-w-0">
