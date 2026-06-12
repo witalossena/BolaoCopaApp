@@ -174,7 +174,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
+export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -191,6 +191,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
   const [savingTeams, setSavingTeams] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
   const [paymentUser, setPaymentUser] = useState(null);
+  const [togglingUnlock, setTogglingUnlock] = useState(null);
   const [localPrizePool, setLocalPrizePool] = useState(prizePool);
   const [savingPrize, setSavingPrize] = useState(false);
   const [lockingAll, setLockingAll] = useState(false);
@@ -787,7 +788,7 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
         </div>
         {allUsers?.map(u => (
           <div key={u.id || u.handle}
-            className="grid grid-cols-[1fr_48px_32px_72px_36px] sm:grid-cols-[1fr_100px_130px_100px_80px] gap-x-3 items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
+            className="grid grid-cols-[1fr_48px_32px_72px_36px_36px] sm:grid-cols-[1fr_100px_130px_100px_36px_80px] gap-x-3 items-center px-5 py-3 border-b border-edge/40 last:border-0 hover:bg-surface2/30 transition">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 shrink-0 rounded-full bg-surface2 border border-edge grid place-items-center font-display text-xs text-cream">
                 {u.name?.[0] || "?"}
@@ -813,6 +814,20 @@ export function Admin({ allUsers, togglePaid, tournamentPhase = "GroupStage", se
             <button onClick={() => setPaymentUser(u)}
               className="font-cond text-xs font-semibold text-mute hover:text-grass-400 transition text-left">
               {u.isPaid ? "Marcar pend." : "Marcar pago"}
+            </button>
+            <button
+              onClick={async () => {
+                setTogglingUnlock(u.id);
+                await togglePredictionUnlock(u);
+                setTogglingUnlock(null);
+              }}
+              disabled={togglingUnlock === u.id}
+              title={u.isPredictionUnlocked ? "Bloquear apostas do usuário" : "Desbloquear apostas do usuário"}
+              className={`w-8 h-8 rounded-lg border grid place-items-center transition shrink-0
+                ${u.isPredictionUnlocked
+                  ? "bg-gold/20 border-gold/50 text-gold hover:bg-gold/30"
+                  : "bg-surface2 border-edge text-mute hover:text-gold hover:border-gold/50"}`}>
+              <Icon name={u.isPredictionUnlocked ? "lock-open" : "lock"} size={13} />
             </button>
             <button onClick={() => setViewingUser(u)} title="Ver apostas"
               className="w-8 h-8 rounded-lg border border-edge bg-surface2 grid place-items-center text-mute hover:text-cream hover:border-edge2 transition shrink-0">

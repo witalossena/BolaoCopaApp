@@ -237,6 +237,18 @@ export default function App() {
     setView("landing");
   };
 
+  const togglePredictionUnlock = async (target) => {
+    try {
+      const newStatus = !target.isPredictionUnlocked;
+      await adminService.toggleUserPredictionUnlock(target.id, newStatus);
+      setAdminUsers(prev => prev.map(u =>
+        u.id === target.id ? { ...u, isPredictionUnlocked: newStatus } : u
+      ));
+    } catch (err) {
+      console.error("Failed to toggle prediction unlock:", err);
+    }
+  };
+
   const togglePaid = async (target) => {
     try {
       const newStatus = !target.isPaid;
@@ -290,7 +302,7 @@ export default function App() {
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} locked={arePredictionsLocked || Object.values(matchStatuses).some(s => s !== "open")} />; break;
     case "regras":     screen = <Regras />; break;
-    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} arePredictionsLocked={arePredictionsLocked} setArePredictionsLocked={setArePredictionsLocked} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
+    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} togglePredictionUnlock={togglePredictionUnlock} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} arePredictionsLocked={arePredictionsLocked} setArePredictionsLocked={setArePredictionsLocked} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
   }
 

@@ -128,6 +128,12 @@ export const adminService = {
     });
     return response.data;
   },
+  toggleUserPredictionUnlock: async (userId, isUnlocked) => {
+    const response = await api.patch(`/admin/users/${userId}/unlock-predictions`, isUnlocked, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
   updateMatchResult: async (matchId, homeScore, awayScore) => {
     const response = await api.post('/admin/match-result', { matchId, homeScore, awayScore });
     return response.data;
