@@ -586,18 +586,19 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
             {groupMatches.map(m => {
               const s = { h: localScores[m.id]?.h ?? "", a: localScores[m.id]?.a ?? "" };
               const hasResult = m.realHome != null && m.realAway != null;
-              const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
+              const isLocked = m.status === "Locked";
+              const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id && !isLocked;
               const lockBtn = (
                 <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
-                  title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
+                  title={isLocked ? "Desbloquear apostas" : "Travar apostas"}
                   className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
-                    ${m.status === "Locked"
+                    ${isLocked
                       ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
                       : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
                   <Icon name="lock" size={13} />
                 </button>
               );
-              const liveBtn = (
+              const liveBtn = !isLocked && (
                 <button onClick={() => saveLiveScore(m.id)} disabled={!canSave || savingMatch === m.id}
                   title="Atualizar placar ao vivo (sem encerrar)"
                   className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
@@ -607,13 +608,13 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
                   <Icon name="radio" size={13} />
                 </button>
               );
-              const saveBtn = (
+              const saveBtn = !isLocked && (
                 <Button size="sm" variant={hasResult ? "secondary" : "primary"}
                   className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
                   {savingMatch === m.id ? "..." : hasResult ? "Finalizar" : "Salvar"}
                 </Button>
               );
-              const resetBtn = hasResult && (
+              const resetBtn = hasResult && !isLocked && (
                 <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
                   title="Remover resultado"
                   className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
@@ -631,11 +632,11 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
                     <div className="flex items-center gap-1 shrink-0">
                       <input type="number" min="0" max="20" value={s.h ?? ""}
                         onChange={e => setScore(m.id, "h", e.target.value)}
-                        placeholder="–" className={inputCls} />
+                        placeholder="–" disabled={isLocked} className={inputCls} />
                       <span className="text-mute2 font-cond text-sm">×</span>
                       <input type="number" min="0" max="20" value={s.a ?? ""}
                         onChange={e => setScore(m.id, "a", e.target.value)}
-                        placeholder="–" className={inputCls} />
+                        placeholder="–" disabled={isLocked} className={inputCls} />
                     </div>
                     <div className="shrink-0 sm:flex-1 flex items-center gap-2">
                       <TeamBadge name={m.awayTeam} showName={false} size="sm" />
