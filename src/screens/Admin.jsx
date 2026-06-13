@@ -64,35 +64,59 @@ function UserPredictionsModal({ user, matches, onClose }) {
 
           {predictions && (<>
             {predictions.matchPredictions?.length > 0 && (() => {
+              const today = new Date().toDateString();
+              const todayItems = [];
               const byGroup = {};
               predictions.matchPredictions.forEach(p => {
                 const m = matchMap[p.externalId];
-                const g = m?.group || '?';
-                if (!byGroup[g]) byGroup[g] = [];
-                byGroup[g].push({ p, m });
+                if (m && new Date(m.matchDate).toDateString() === today) {
+                  todayItems.push({ p, m });
+                } else {
+                  const g = m?.group || '?';
+                  if (!byGroup[g]) byGroup[g] = [];
+                  byGroup[g].push({ p, m });
+                }
               });
               const groupKeys = Object.keys(byGroup).sort();
+
+              const PredRow = ({ p, m }) => {
+                const hasResult = m?.realHome != null && m?.realAway != null;
+                const pointsBadge = hasResult
+                  ? <span className={`font-cond text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${(p.points ?? 0) > 0 ? 'bg-grass-400/20 text-grass-400' : 'bg-surface text-mute2'}`}>{p.points ?? 0}pt</span>
+                  : null;
+                return (
+                  <div key={p.externalId} className="flex items-center gap-2 bg-surface2 rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
+                      <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
+                    </div>
+                    <span className="font-display text-cream text-sm shrink-0 w-14 text-center">{p.homeScore} × {p.awayScore}</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                      <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
+                      {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
+                    </div>
+                    {pointsBadge}
+                  </div>
+                );
+              };
+
               return (
                 <div className="pt-0">
                   <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Apostas de Partidas</div>
                   <div className="space-y-4">
+                    {todayItems.length > 0 && (
+                      <div>
+                        <div className="font-cond text-[10px] text-grass-400/70 uppercase tracking-widest mb-1.5 px-1">Jogos de Hoje</div>
+                        <div className="space-y-1.5">
+                          {todayItems.map(({ p, m }) => <PredRow key={p.externalId} p={p} m={m} />)}
+                        </div>
+                      </div>
+                    )}
                     {groupKeys.map(g => (
                       <div key={g}>
                         <div className="font-cond text-[10px] text-mute2 uppercase tracking-widest mb-1.5 px-1">Grupo {g}</div>
                         <div className="space-y-1.5">
-                          {byGroup[g].map(({ p, m }) => (
-                            <div key={p.externalId} className="flex items-center gap-2 bg-surface2 rounded-xl px-4 py-2.5">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                {m && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
-                                <span className="font-cond text-sm text-cream truncate">{m ? m.homeTeam : p.externalId}</span>
-                              </div>
-                              <span className="font-display text-cream text-sm shrink-0 w-14 text-center">{p.homeScore} × {p.awayScore}</span>
-                              <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                                <span className="font-cond text-sm text-cream truncate">{m ? m.awayTeam : ""}</span>
-                                {m && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
-                              </div>
-                            </div>
-                          ))}
+                          {byGroup[g].map(({ p, m }) => <PredRow key={p.externalId} p={p} m={m} />)}
                         </div>
                       </div>
                     ))}
