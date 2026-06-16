@@ -305,7 +305,7 @@ export default function App() {
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} locked={arePredictionsLocked || Object.values(matchStatuses).some(s => s !== "open")} />; break;
     case "regras":     screen = <Regras />; break;
-    case "admin":      screen = <Admin allUsers={adminUsers || [user]} togglePaid={togglePaid} togglePredictionUnlock={togglePredictionUnlock} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} arePredictionsLocked={arePredictionsLocked} setArePredictionsLocked={setArePredictionsLocked} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
+    case "admin":      screen = <Admin allUsers={adminUsers || [user]} ranking={ranking} togglePaid={togglePaid} togglePredictionUnlock={togglePredictionUnlock} tournamentPhase={tournamentPhase} setTournamentPhase={setTournamentPhase} arePredictionsLocked={arePredictionsLocked} setArePredictionsLocked={setArePredictionsLocked} prizePool={prizePool} setPrizePool={setPrizePool} />; break;
     default:           screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} />;
   }
 

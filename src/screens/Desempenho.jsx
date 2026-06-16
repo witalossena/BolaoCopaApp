@@ -8,6 +8,7 @@ import { TeamBadge } from '../components/ui/TeamBadge';
 import { predictionService } from '../services/api';
 import { SPECIAL_FIELDS, MATCHES } from '../data';
 import { ExportPDFLayout } from '../components/ExportPDFLayout';
+import { CravadosShareCard } from '../components/CravadosShareCard';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -60,6 +61,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {}, 
   const [clearConfirm, setClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [sharingCravados, setSharingCravados] = useState(false);
   const dashboardRef = useRef();
 
   useEffect(() => {
@@ -130,15 +132,50 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {}, 
     }
   };
 
+  const cravados = history.filter(h => h.points >= 15);
+
+  const handleShareCravados = async () => {
+    if (cravados.length === 0) return;
+    setSharingCravados(true);
+    try {
+      const el = document.getElementById('cravados-share-card-container');
+      el.style.display = 'block';
+      const canvas = await html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true, logging: false });
+      el.style.display = 'none';
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], `cravados-${user.handle}-copa2026.png`, { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Meus cravados — Bolão Copa 2026' });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = file.name; a.click();
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error('Share failed:', err);
+    } finally {
+      setSharingCravados(false);
+    }
+  };
+
   const fmtDate = (d) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
   return (
     <div ref={dashboardRef} className="bg-bg p-2 sm:p-4 rounded-3xl text-left">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
         <PageTitle kicker={`Olá, ${user.name.split(" ")[0]}`} className="mb-0">Meu Desempenho</PageTitle>
-        <Button variant="secondary" icon="download" disabled={downloading || !hasAnyPrediction} onClick={handleDownloadPDF}>
-          {downloading ? "Gerando PDF..." : "Baixar Palpites (PDF)"}
-        </Button>
+        <div className="flex gap-2">
+          {cravados.length > 0 && (
+            <Button variant="secondary" icon="share" disabled={sharingCravados} onClick={handleShareCravados}>
+              {sharingCravados ? "Gerando..." : `🎯 ${cravados.length} Cravado${cravados.length !== 1 ? 's' : ''}`}
+            </Button>
+          )}
+          <Button variant="secondary" icon="download" disabled={downloading || !hasAnyPrediction} onClick={handleDownloadPDF}>
+            {downloading ? "Gerando PDF..." : "Baixar Palpites (PDF)"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
@@ -377,13 +414,17 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {}, 
       )}
 
       <div id="pdf-export-layout-container" style={{ display: 'none', position: 'absolute', top: 0, left: 0 }}>
-        <ExportPDFLayout 
-          user={user} 
-          matchPredictions={matchPredictions} 
-          groupRanks={groupRanks} 
-          knockoutPredictions={knockoutPredictions} 
-          specials={specials} 
+        <ExportPDFLayout
+          user={user}
+          matchPredictions={matchPredictions}
+          groupRanks={groupRanks}
+          knockoutPredictions={knockoutPredictions}
+          specials={specials}
         />
+      </div>
+
+      <div id="cravados-share-card-container" style={{ display: 'none', position: 'absolute', top: 0, left: 0, zIndex: -1 }}>
+        <CravadosShareCard user={user} cravados={cravados} />
       </div>
     </div>
   );

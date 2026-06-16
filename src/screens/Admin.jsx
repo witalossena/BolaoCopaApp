@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TOTAL_MATCHES, GROUP_ORDER, GROUPS, SPECIAL_FIELDS } from '../data';
 import { AdminReportLayout } from '../components/AdminReportLayout';
+import { AdminCravadosCard } from '../components/AdminCravadosCard';
 import { Icon } from '../components/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -9,6 +10,7 @@ import { TeamBadge } from '../components/ui/TeamBadge';
 import { PageTitle } from '../components/ui/PageTitle';
 import { Select } from '../components/ui/Select';
 import { matchService, adminService } from '../services/api';
+import html2canvas from 'html2canvas';
 
 function AdminTile({ icon, value, label, tone }) {
   const c = tone === "gold" ? "text-gold" : tone === "amber" ? "text-gold-400" : tone === "red" ? "text-danger" : "text-grass-400";
@@ -198,7 +200,7 @@ function UserPredictionsModal({ user, matches, onClose }) {
   );
 }
 
-export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
+export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlock, tournamentPhase = "GroupStage", setTournamentPhase, arePredictionsLocked = false, setArePredictionsLocked, prizePool = 0, setPrizePool }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -222,6 +224,7 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
   const [reportData, setReportData] = useState(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [sharingCravados, setSharingCravados] = useState(false);
   useEffect(() => { setLocalPrizePool(prizePool); }, [prizePool]);
 
   useEffect(() => {
@@ -456,6 +459,31 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
     }
   };
 
+  const handleShareCravados = async () => {
+    setSharingCravados(true);
+    try {
+      const el = document.getElementById('admin-cravados-card-container');
+      el.style.display = 'block';
+      const canvas = await html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true, logging: false });
+      el.style.display = 'none';
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'cravados-copa-2026.png', { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Cravados do Bolão Copa 2026' });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'cravados-copa-2026.png'; a.click();
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (err) {
+      if (err.name !== 'AbortError') showToast('Erro ao gerar imagem.');
+    } finally {
+      setSharingCravados(false);
+    }
+  };
+
   const setScore = (matchId, side, val) => {
     setLocalScores(prev => ({ ...prev, [matchId]: { ...(prev[matchId] || {}), [side]: val } }));
   };
@@ -509,7 +537,7 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
         <AdminTile icon="ball"   value={TOTAL_MATCHES} label="JOGOS NO BANCO" />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <Button variant="secondary" size="lg" icon="refresh" disabled={!!busy} onClick={handleRefreshMatches}>
           {busy === "res" ? "Atualizando..." : "Atualizar Jogos"}
         </Button>
@@ -519,6 +547,9 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
         <Button variant={arePredictionsLocked ? "danger" : "secondary"} size="lg" icon={arePredictionsLocked ? "lock" : "unlock"}
           disabled={lockingAll} onClick={toggleLockAll}>
           {lockingAll ? "..." : arePredictionsLocked ? "Apostas Travadas" : "Travar Tudo"}
+        </Button>
+        <Button variant="secondary" size="lg" icon="share" disabled={sharingCravados || ranking.length === 0} onClick={handleShareCravados}>
+          {sharingCravados ? "Gerando..." : "Compartilhar Cravados"}
         </Button>
       </div>
 
@@ -911,6 +942,10 @@ export function Admin({ allUsers, togglePaid, togglePredictionUnlock, tournament
           <span className="font-cond font-semibold text-sm">{toast}</span>
         </div>
       )}
+
+      <div id="admin-cravados-card-container" style={{ display: 'none', position: 'absolute', top: 0, left: 0, zIndex: -1 }}>
+        <AdminCravadosCard ranking={ranking} />
+      </div>
       </div>
       );
       }
