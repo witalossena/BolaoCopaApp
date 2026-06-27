@@ -62,7 +62,7 @@ export default function App() {
   const [koWinners, setKoWinners] = useState({});
   const [koScores, setKoScores] = useState({});
   const [thirds, setThirds] = useState({});
-  const [tournamentPhase, setTournamentPhase] = useState("GroupStage");
+  const [tournamentPhase, setTournamentPhase] = useState(null);
   const [arePredictionsLocked, setArePredictionsLocked] = useState(false);
   const [prizePool, setPrizePool] = useState(0);
 
@@ -169,7 +169,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    if (tournamentPhase !== "GroupStage") return;
+    if (tournamentPhase !== "GroupStage" || arePredictionsLocked) return;
     const hasAny = Object.values(specials).some(v => v && v.trim());
     if (!hasAny) return;
     if (specialsDebounceRef.current) clearTimeout(specialsDebounceRef.current);
