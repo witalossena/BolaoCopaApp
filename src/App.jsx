@@ -58,6 +58,7 @@ export default function App() {
   const [realRanking, setRealRanking] = useState([]);
   const [matchStatuses, setMatchStatuses] = useState({});
   const [matchIdMap, setMatchIdMap] = useState({});
+  const [knockoutMatches, setKnockoutMatches] = useState([]);
   const [koWinners, setKoWinners] = useState({});
   const [koScores, setKoScores] = useState({});
   const [thirds, setThirds] = useState({});
@@ -94,14 +95,19 @@ export default function App() {
     matchService.getMatches().then(data => {
       const statuses = {};
       const idMap = {};
+      const koMatches = [];
       data.forEach(m => {
         if (m.externalId) {
           statuses[m.externalId] = m.status.toLowerCase();
           idMap[m.externalId] = m.id;
+          if (m.externalId.startsWith('ko_')) {
+            koMatches.push({ externalId: m.externalId, id: m.id, homeTeam: m.homeTeam, awayTeam: m.awayTeam, matchDate: m.matchDate, status: m.status.toLowerCase() });
+          }
         }
       });
       setMatchStatuses(statuses);
       setMatchIdMap(idMap);
+      setKnockoutMatches(koMatches);
     }).catch(() => {});
   }, [view]);
 
@@ -301,7 +307,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} locked={(arePredictionsLocked || tournamentPhase !== "GroupStage") && !user?.isPredictionUnlocked} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} locked={arePredictionsLocked || tournamentPhase !== "GroupStage"} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} locked={arePredictionsLocked} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} knockoutMatches={knockoutMatches} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} locked={arePredictionsLocked} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} locked={arePredictionsLocked || Object.values(matchStatuses).some(s => s !== "open")} />; break;
     case "regras":     screen = <Regras />; break;

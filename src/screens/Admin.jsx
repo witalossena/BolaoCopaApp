@@ -510,6 +510,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
   const groupMatches = matches.filter(m => m.group === activeGroup);
   const knockoutMatches = matches.filter(m => m.round !== "Group");
   const KO_ROUNDS = [
+    { key: "RoundOf32",    label: "16avos" },
     { key: "RoundOf16",    label: "Oitavas" },
     { key: "QuarterFinal", label: "Quartas" },
     { key: "SemiFinal",    label: "Semifinal" },
@@ -759,65 +760,96 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
         {resultTab === "matamata" && (
           <div className="divide-y divide-edge/30">
             {KO_ROUNDS.map(({ key, label }) => {
-              const rms = knockoutMatches.filter(m => m.round === key);
+              const rms = knockoutMatches.filter(m => m.round === key).sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate));
               if (rms.length === 0) return null;
               return (
                 <div key={key}>
                   <div className="px-5 py-2 bg-surface2/40 font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase">
                     {label}
                   </div>
-                  {rms.map(m => {
-                    const s = { h: localScores[m.id]?.h ?? "", a: localScores[m.id]?.a ?? "" };
-                    const t = { h: localTeams[m.id]?.h ?? m.homeTeam ?? "", a: localTeams[m.id]?.a ?? m.awayTeam ?? "" };
-                    const hasResult = m.realHome != null && m.realAway != null;
-                    const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id;
-                    const canSaveTeams = t.h && t.a && savingTeams !== m.id;
-                    return (
-                      <div key={m.id} className="px-5 py-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-cond text-mute2 text-xs w-10 shrink-0">{fmtDate(m.matchDate)}</span>
-                          <input value={t.h} onChange={e => setTeam(m.id, "h", e.target.value)}
-                            placeholder="Time da casa"
-                            className="flex-1 h-8 px-2 text-sm font-cond rounded-lg border bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25 outline-none" />
-                          <span className="text-mute2 font-cond text-sm shrink-0">vs</span>
-                          <input value={t.a} onChange={e => setTeam(m.id, "a", e.target.value)}
-                            placeholder="Time visitante"
-                            className="flex-1 h-8 px-2 text-sm font-cond rounded-lg border bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25 outline-none" />
-                          <Button size="sm" variant="secondary" disabled={!canSaveTeams} onClick={() => saveTeams(m.id)}>
-                            {savingTeams === m.id ? "..." : "Times"}
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2 pl-14">
-                          <input type="number" min="0" max="20" value={s.h ?? ""}
-                            onChange={e => setScore(m.id, "h", e.target.value)}
-                            placeholder="–" className={inputCls} />
-                          <span className="text-mute2 font-cond text-sm">×</span>
-                          <input type="number" min="0" max="20" value={s.a ?? ""}
-                            onChange={e => setScore(m.id, "a", e.target.value)}
-                            placeholder="–" className={inputCls} />
-                          <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
-                            title={m.status === "Locked" ? "Desbloquear apostas" : "Travar apostas"}
-                            className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
-                              ${m.status === "Locked"
-                                ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
-                                : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
-                            <Icon name="lock" size={13} />
-                          </button>
-                          <Button size="sm" variant={hasResult ? "secondary" : "primary"}
-                            className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
-                            {savingMatch === m.id ? "..." : hasResult ? "Atualizar" : "Salvar"}
-                          </Button>
-                          {hasResult && (
-                            <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
-                              title="Remover resultado"
-                              className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
-                              <Icon name="x" size={13} />
-                            </button>
+                  <div className="divide-y divide-edge/40">
+                    {rms.map(m => {
+                      const s = { h: localScores[m.id]?.h ?? "", a: localScores[m.id]?.a ?? "" };
+                      const t = { h: localTeams[m.id]?.h ?? m.homeTeam ?? "", a: localTeams[m.id]?.a ?? m.awayTeam ?? "" };
+                      const hasResult = m.realHome != null && m.realAway != null;
+                      const isLocked = m.status === "Locked";
+                      const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id && !isLocked;
+                      const canSaveTeams = t.h && t.a && savingTeams !== m.id;
+                      const isUndefined = !m.homeTeam || m.homeTeam === "A definir" || !m.awayTeam || m.awayTeam === "A definir";
+                      const lockBtn = (
+                        <button onClick={() => toggleLock(m)} disabled={lockingMatch === m.id}
+                          title={isLocked ? "Desbloquear apostas" : "Travar apostas"}
+                          className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                            ${isLocked
+                              ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                              : "bg-surface2 border-edge text-mute hover:text-cream hover:border-edge2"}`}>
+                          <Icon name="lock" size={13} />
+                        </button>
+                      );
+                      const liveBtn = !isLocked && (
+                        <button onClick={() => saveLiveScore(m.id)} disabled={!canSave || savingMatch === m.id}
+                          title="Atualizar placar ao vivo"
+                          className={`w-8 h-8 rounded-lg border grid place-items-center shrink-0 transition
+                            ${m.status === "Live"
+                              ? "bg-danger/20 border-danger/40 text-danger hover:bg-danger/30"
+                              : "bg-surface2 border-edge text-mute hover:text-danger hover:border-danger/40"}`}>
+                          <Icon name="radio" size={13} />
+                        </button>
+                      );
+                      const saveBtn = !isLocked && (
+                        <Button size="sm" variant={hasResult ? "secondary" : "primary"}
+                          className="w-24 justify-center" disabled={!canSave} onClick={() => saveResult(m.id)}>
+                          {savingMatch === m.id ? "..." : hasResult ? "Finalizar" : "Salvar"}
+                        </Button>
+                      );
+                      const resetBtn = hasResult && !isLocked && (
+                        <button onClick={() => resetResult(m.id)} disabled={resettingMatch === m.id}
+                          title="Remover resultado"
+                          className="w-8 h-8 rounded-lg border border-edge bg-surface2 text-mute hover:text-danger hover:border-danger/40 grid place-items-center shrink-0 transition">
+                          <Icon name="x" size={13} />
+                        </button>
+                      );
+                      return (
+                        <div key={m.id} className="px-3 sm:px-5 py-3 space-y-2">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <span className="font-cond text-mute2 text-xs w-9 shrink-0">{fmtDate(m.matchDate)}</span>
+                            <div className="shrink-0 sm:flex-1 flex items-center justify-end gap-2">
+                              <span className="font-cond text-sm text-cream truncate hidden sm:block">{t.h || "A definir"}</span>
+                              {!isUndefined && <TeamBadge name={m.homeTeam} showName={false} size="sm" />}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <input type="number" min="0" max="20" value={s.h ?? ""}
+                                onChange={e => setScore(m.id, "h", e.target.value)}
+                                placeholder="–" disabled={isLocked} className={inputCls} />
+                              <span className="text-mute2 font-cond text-sm">×</span>
+                              <input type="number" min="0" max="20" value={s.a ?? ""}
+                                onChange={e => setScore(m.id, "a", e.target.value)}
+                                placeholder="–" disabled={isLocked} className={inputCls} />
+                            </div>
+                            <div className="shrink-0 sm:flex-1 flex items-center gap-2">
+                              {!isUndefined && <TeamBadge name={m.awayTeam} showName={false} size="sm" />}
+                              <span className="font-cond text-sm text-cream truncate hidden sm:block">{t.a || "A definir"}</span>
+                            </div>
+                            {lockBtn}{liveBtn}{saveBtn}{resetBtn}
+                          </div>
+                          {isUndefined && (
+                            <div className="flex items-center gap-2 pl-9">
+                              <input value={t.h} onChange={e => setTeam(m.id, "h", e.target.value)}
+                                placeholder="Time da casa"
+                                className="flex-1 h-8 px-2 text-sm font-cond rounded-lg border bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25 outline-none" />
+                              <span className="text-mute2 font-cond text-sm shrink-0">vs</span>
+                              <input value={t.a} onChange={e => setTeam(m.id, "a", e.target.value)}
+                                placeholder="Time visitante"
+                                className="flex-1 h-8 px-2 text-sm font-cond rounded-lg border bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25 outline-none" />
+                              <Button size="sm" variant="secondary" disabled={!canSaveTeams} onClick={() => saveTeams(m.id)}>
+                                {savingTeams === m.id ? "..." : "Times"}
+                              </Button>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
@@ -854,7 +886,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
                 <div className="text-mute2 text-xs truncate">{u.handle}</div>
               </div>
             </div>
-            <span className="text-right font-cond font-bold text-cream text-sm">{u.totalPts ?? (u.groupPts + u.awardPts)}</span>
+            <span className="text-right font-cond font-bold text-cream text-sm">{u.totalPts ?? ((u.groupPts ?? 0) + (u.awardPts ?? 0))}</span>
             <div className="flex items-center">
               <span className="sm:hidden">
                 {u.isPaid
