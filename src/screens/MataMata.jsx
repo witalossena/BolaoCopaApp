@@ -73,8 +73,8 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
     let res = resolution ?? 'Normal';
     if (hv > av) { resolvedWinner = home; res = 'Normal'; }
     else if (av > hv) { resolvedWinner = away; res = 'Normal'; }
-    // tied: need resolution before saving
-    if (hv === av && !resolution) return;
+    // tied: need explicit resolution (Prorrogação or Pênaltis)
+    if (hv === av && (!resolution || resolution === 'Normal')) return;
     if (!resolvedWinner) return;
     if (resolvedWinner !== winner) onWinner(resolvedWinner);
     if (res !== resolution) onResolution(res);
@@ -128,13 +128,25 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
         <div className="flex items-center gap-1 shrink-0">
           <input ref={homeRef} type="number" min="0" max="20" disabled={isLocked}
             value={score?.h ?? ''}
-            onChange={e => { onScore('h', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))); setDirty(true); }}
+            onChange={e => {
+              const val = e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)));
+              onScore('h', val);
+              setDirty(true);
+              const otherVal = awayRef.current?.value;
+              if (val !== '' && otherVal !== '' && val === otherVal) { onWinner(null); onResolution(null); }
+            }}
             placeholder={isLocked ? '–' : '0'}
             className={inputCls} />
           <span className="text-mute2 font-cond text-sm">×</span>
           <input ref={awayRef} type="number" min="0" max="20" disabled={isLocked}
             value={score?.a ?? ''}
-            onChange={e => { onScore('a', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))); setDirty(true); }}
+            onChange={e => {
+              const val = e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)));
+              onScore('a', val);
+              setDirty(true);
+              const otherVal = homeRef.current?.value;
+              if (val !== '' && otherVal !== '' && val === otherVal) { onWinner(null); onResolution(null); }
+            }}
             placeholder={isLocked ? '–' : '0'}
             className={inputCls} />
         </div>
@@ -171,7 +183,7 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
               {res === 'ExtraTime' ? 'Prorrogação' : 'Pênaltis'}
             </button>
           ))}
-          {dirty && !(needsResolution && !resolution) && (
+          {dirty && !(needsResolution && (!resolution || resolution === 'Normal')) && (
             <button
               onClick={handleSave}
               className="px-3 py-1 rounded-lg bg-grass text-bg font-cond text-xs font-bold transition hover:bg-grass/80 active:scale-95">
