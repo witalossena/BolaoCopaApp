@@ -158,6 +158,10 @@ export const adminService = {
     const response = await api.post('/admin/calculate-group-scores');
     return response.data;
   },
+  calculateKnockoutScores: async () => {
+    const response = await api.post('/admin/calculate-knockout-scores');
+    return response.data;
+  },
   lockMatch: async (matchId, isLocked) => {
     const response = await api.patch(`/admin/matches/${matchId}/lock`, isLocked, {
       headers: { 'Content-Type': 'application/json' }

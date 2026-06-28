@@ -113,10 +113,15 @@ function UserPredictionsModal({ user, matches, onClose }) {
                           return (
                             <div key={k.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
                               <span className="font-cond text-sm text-mute2 truncate">{m ? `${m.homeTeam} vs ${m.awayTeam}` : k.externalId}</span>
-                              <span className="font-cond font-bold text-grass-400 text-sm ml-3 shrink-0">
-                                {k.winnerTeam}
-                                {k.homeScore != null && <span className="font-normal text-mute2 ml-1 text-xs">({k.homeScore}×{k.awayScore}{k.resolution && k.resolution !== 'Normal' ? ` · ${k.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}` : ''})</span>}
-                              </span>
+                              <div className="flex items-center gap-2 ml-3 shrink-0">
+                                <span className="font-cond font-bold text-grass-400 text-sm">
+                                  {k.winnerTeam}
+                                  {k.homeScore != null && <span className="font-normal text-mute2 ml-1 text-xs">({k.homeScore}×{k.awayScore}{k.resolution && k.resolution !== 'Normal' ? ` · ${k.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}` : ''})</span>}
+                                </span>
+                                <span className={`font-cond text-xs font-semibold px-2 py-0.5 rounded-full ${(k.points ?? 0) > 0 ? 'bg-grass-400/20 text-grass-400' : 'bg-surface text-mute2'}`}>
+                                  {k.points ?? 0}pt
+                                </span>
+                              </div>
                             </div>
                           );
                         })}
@@ -290,6 +295,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
     try {
       await adminService.calculateScores();
       await adminService.calculateGroupScores();
+      await adminService.calculateKnockoutScores();
       showToast("Pontuações recalculadas para todos.");
     } catch {
       showToast("Erro ao recalcular pontuações.");
