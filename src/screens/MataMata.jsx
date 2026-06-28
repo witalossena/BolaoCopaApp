@@ -184,12 +184,15 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
               {res === 'ExtraTime' ? 'Prorrogação' : 'Pênaltis'}
             </button>
           ))}
-          {dirty && !(needsResolution && (!resolution || resolution === 'Normal')) && (
+          {dirty && !(needsResolution && (!resolution || resolution === 'Normal')) && !(!winner && needsResolution) && (
             <button
               onClick={handleSave}
               className="px-3 py-1 rounded-lg bg-grass text-bg font-cond text-xs font-bold transition hover:bg-grass/80 active:scale-95">
               Salvar placar
             </button>
+          )}
+          {needsResolution && resolution && resolution !== 'Normal' && !winner && (
+            <span className="font-cond text-xs text-mute2 italic">← clique no time vencedor</span>
           )}
         </div>
       )}
