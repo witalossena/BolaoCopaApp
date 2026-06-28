@@ -92,11 +92,12 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
   const pickResolution = (res) => {
     if (!canPick) return;
     onResolution(res);
-    if (res === 'Normal') {
-      // can't have normal resolution with tied 90min score — ignore
-      return;
+    if (res === 'Normal') return;
+    if (winner) {
+      submit(winner, score?.h, score?.a, res);
+    } else {
+      setDirty(true);
     }
-    if (winner) submit(winner, score?.h, score?.a, res);
   };
 
   const inputCls = `w-12 h-11 text-center text-lg font-cond font-bold rounded-lg border outline-none transition
@@ -133,7 +134,7 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
               onScore('h', val);
               setDirty(true);
               const otherVal = awayRef.current?.value;
-              if (val !== '' && otherVal !== '' && val === otherVal) { onWinner(null); onResolution(null); }
+              if (val !== '' && otherVal !== '' && val === otherVal && (!resolution || resolution === 'Normal')) { onWinner(null); onResolution(null); }
             }}
             placeholder={isLocked ? '–' : '0'}
             className={inputCls} />
@@ -145,7 +146,7 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
               onScore('a', val);
               setDirty(true);
               const otherVal = homeRef.current?.value;
-              if (val !== '' && otherVal !== '' && val === otherVal) { onWinner(null); onResolution(null); }
+              if (val !== '' && otherVal !== '' && val === otherVal && (!resolution || resolution === 'Normal')) { onWinner(null); onResolution(null); }
             }}
             placeholder={isLocked ? '–' : '0'}
             className={inputCls} />
