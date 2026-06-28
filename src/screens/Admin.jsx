@@ -104,6 +104,25 @@ function UserPredictionsModal({ user, matches, onClose }) {
 
               return (
                 <div className="pt-0">
+                  {predictions.knockoutPredictions?.length > 0 && (
+                    <div className="mb-6">
+                      <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Mata-Mata</div>
+                      <div className="space-y-1.5">
+                        {predictions.knockoutPredictions.map(k => {
+                          const m = matchMap[k.externalId];
+                          return (
+                            <div key={k.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
+                              <span className="font-cond text-sm text-mute2 truncate">{m ? `${m.homeTeam} vs ${m.awayTeam}` : k.externalId}</span>
+                              <span className="font-cond font-bold text-grass-400 text-sm ml-3 shrink-0">
+                                {k.winnerTeam}
+                                {k.homeScore != null && <span className="font-normal text-mute2 ml-1 text-xs">({k.homeScore}×{k.awayScore}{k.resolution && k.resolution !== 'Normal' ? ` · ${k.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}` : ''})</span>}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Apostas de Partidas</div>
                   <div className="space-y-4">
                     {todayItems.length > 0 && (
@@ -148,22 +167,6 @@ function UserPredictionsModal({ user, matches, onClose }) {
               </div>
             )}
 
-            {predictions.knockoutPredictions?.length > 0 && (
-              <div className="pt-6">
-                <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Mata-Mata</div>
-                <div className="space-y-1.5">
-                  {predictions.knockoutPredictions.map(k => {
-                    const m = matchMap[k.externalId];
-                    return (
-                      <div key={k.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
-                        <span className="font-cond text-sm text-mute2 truncate">{m ? `${m.homeTeam} vs ${m.awayTeam}` : k.externalId}</span>
-                        <span className="font-cond font-bold text-grass-400 text-sm ml-3 shrink-0">{k.winnerTeam}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {predictions.specials && (
               <div className="pt-6">
