@@ -83,7 +83,7 @@ export function Landing({ go }) {
       </section>
 
       <footer className="border-t border-edge/60 py-8 text-center">
-        <p className="font-cond text-mute2 text-sm tracking-wide">Bolão da Copa 2026 · protótipo de demonstração</p>
+        <p className="font-cond text-mute2 text-sm tracking-wide">Bolão da Copa 2026</p>
       </footer>
     </div>
   );
