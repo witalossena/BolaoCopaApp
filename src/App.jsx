@@ -61,6 +61,7 @@ export default function App() {
   const [knockoutMatches, setKnockoutMatches] = useState([]);
   const [koWinners, setKoWinners] = useState({});
   const [koScores, setKoScores] = useState({});
+  const [koResolutions, setKoResolutions] = useState({});
   const [thirds, setThirds] = useState({});
   const [tournamentPhase, setTournamentPhase] = useState(null);
   const [arePredictionsLocked, setArePredictionsLocked] = useState(false);
@@ -142,16 +143,20 @@ export default function App() {
       if (data.knockoutPredictions?.length > 0) {
         const winnerMap = {};
         const scoreMap = {};
-        data.knockoutPredictions.forEach(({ externalId, winnerTeam, homeScore, awayScore }) => {
+        const resolutionMap = {};
+        const etScoreMap = {};
+        data.knockoutPredictions.forEach(({ externalId, winnerTeam, homeScore, awayScore, resolution }) => {
           const key = externalIdToWinnerKey(externalId);
           if (key) {
             winnerMap[key] = winnerTeam;
             if (homeScore != null && awayScore != null)
               scoreMap[key] = { h: String(homeScore), a: String(awayScore) };
+            if (resolution) resolutionMap[key] = resolution;
           }
         });
         setKoWinners(prev => ({ ...prev, ...winnerMap }));
         setKoScores(prev => ({ ...prev, ...scoreMap }));
+        setKoResolutions(prev => ({ ...prev, ...resolutionMap }));
       }
       if (data.specials) {
         setSpecials({
@@ -209,6 +214,7 @@ export default function App() {
     setSpecials({});
     setKoWinners({});
     setKoScores({});
+    setKoResolutions({});
     setThirds({});
   };
 
@@ -307,7 +313,7 @@ export default function App() {
   switch (view) {
     case "palpites":   screen = <Palpites scores={scores} setScore={setScore} ranks={ranks} setRank={setRank} matchStatuses={matchStatuses} matchIdMap={matchIdMap} locked={(arePredictionsLocked || tournamentPhase !== "GroupStage") && !user?.isPredictionUnlocked} />; break;
     case "especiais":  screen = <Especiais specials={specials} setSpecial={setSpecial} koWinners={koWinners} locked={arePredictionsLocked || tournamentPhase !== "GroupStage"} />; break;
-    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} knockoutMatches={knockoutMatches} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); }} locked={arePredictionsLocked} />; break;
+    case "matamata":   screen = <MataMata ranks={ranks} matchIdMap={matchIdMap} knockoutMatches={knockoutMatches} winners={koWinners} setWinners={setKoWinners} koScores={koScores} setKoScores={setKoScores} koResolutions={koResolutions} setKoResolutions={setKoResolutions} thirds={thirds} setThirds={setThirds} tournamentPhase={tournamentPhase} onReset={() => { setSpecials(s => { const n = {...s}; delete n.campeao; delete n.vice; return n; }); setKoScores({}); setKoResolutions({}); }} locked={arePredictionsLocked} />; break;
     case "ranking":    screen = <Ranking ranking={ranking} currentUser={user} prizePool={prizePool} />; break;
     case "desempenho": screen = <Desempenho user={user} ranking={ranking} setView={setView} onClearAll={handleClearAll} specials={specials} locked={arePredictionsLocked || Object.values(matchStatuses).some(s => s !== "open")} />; break;
     case "regras":     screen = <Regras />; break;

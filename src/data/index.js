@@ -159,8 +159,9 @@ export const SCORING = {
     { label: "Seleção classificada, mas em outra posição", pts: 5 },
   ],
   knockout: [
-    { label: "Vencedor de cada confronto previsto corretamente", pts: 15 },
-    { label: "Vencedor de cada confronto previsto corretamente (placar)", pts: 20 },
+    { label: "Acertar o vencedor do confronto", pts: 15 },
+    { label: "+ Placar exato nos 90 minutos", pts: 5 },
+    { label: "+ Acertar se foi prorrogação ou pênaltis", pts: 5 },
   ],
   awards: [
     { key:"campeao",    label:"Campeão",                         pts:75 },

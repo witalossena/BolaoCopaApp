@@ -34,7 +34,7 @@ function formatDate(dateStr) {
     ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
-function KnockoutMatchRow({ match, score, winner, onScore, onWinner, locked }) {
+function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution, onResolution, locked }) {
   const homeRef = useRef();
   const awayRef = useRef();
   const isLocked = match.status === 'locked' || match.status === 'live';
@@ -44,16 +44,21 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, locked }) {
   const hasAway = away && away !== 'A definir';
   const canPick = hasHome && hasAway && !isLocked;
 
-  const submit = (w, h, a) => {
+  const hNum = score?.h !== '' && score?.h != null ? parseInt(score.h, 10) : null;
+  const aNum = score?.a !== '' && score?.a != null ? parseInt(score.a, 10) : null;
+  const isTied = hNum != null && aNum != null && hNum === aNum;
+  const needsResolution = isTied;
+
+  const submit = (w, h, a, res) => {
     if (!match.id) return;
     const hv = h !== '' && h != null ? parseInt(h, 10) : null;
     const av = a !== '' && a != null ? parseInt(a, 10) : null;
-    predictionService.submitKnockoutPrediction(match.id, w, hv, av)
+    predictionService.submitKnockoutPrediction(match.id, w, hv, av, res ?? null)
       .catch(err => console.error('[MataMata] submit failed:', err));
   };
 
   const handleBlur = () => {
-    if (!winner) return;
+    if (!canPick) return;
     const h = homeRef.current?.value;
     const a = awayRef.current?.value;
     if ((h === '' || h == null) && (a === '' || a == null)) return;
@@ -61,15 +66,33 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, locked }) {
     const aFinal = a !== '' && a != null ? a : '0';
     if (h === '' || h == null) onScore('h', '0');
     if (a === '' || a == null) onScore('a', '0');
-    submit(winner, hFinal, aFinal);
+    const hv = parseInt(hFinal, 10);
+    const av = parseInt(aFinal, 10);
+    let resolvedWinner = winner;
+    let res = resolution ?? 'Normal';
+    if (hv > av) { resolvedWinner = home; res = 'Normal'; }
+    else if (av > hv) { resolvedWinner = away; res = 'Normal'; }
+    // tied: keep current resolution + winner, wait for user to pick
+    if (!resolvedWinner) return;
+    if (resolvedWinner !== winner) onWinner(resolvedWinner);
+    if (res !== resolution) onResolution(res);
+    submit(resolvedWinner, hFinal, aFinal, res);
   };
 
   const pickWinner = (team) => {
     if (!canPick) return;
     onWinner(team);
-    const h = score?.h;
-    const a = score?.a;
-    submit(team, h, a);
+    submit(team, score?.h, score?.a, resolution ?? (needsResolution ? 'Penalties' : 'Normal'));
+  };
+
+  const pickResolution = (res) => {
+    if (!canPick) return;
+    onResolution(res);
+    if (res === 'Normal') {
+      // can't have normal resolution with tied 90min score — ignore
+      return;
+    }
+    if (winner) submit(winner, score?.h, score?.a, res);
   };
 
   const inputCls = `w-12 h-11 text-center text-lg font-cond font-bold rounded-lg border outline-none transition
@@ -78,63 +101,81 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, locked }) {
       : 'bg-bg/70 border-edge text-cream focus:border-grass focus:ring-2 focus:ring-grass/25'}`;
 
   return (
-    <div className={`flex items-center gap-3 py-3 border-b border-edge/30 last:border-0 ${isLocked ? 'opacity-70' : ''}`}>
-      <div className="w-14 shrink-0 text-center">
-        <div className="font-cond text-mute2 text-[10px] leading-tight">{formatDate(match.matchDate)}</div>
+    <div className={`flex flex-col border-b border-edge/30 last:border-0 ${isLocked ? 'opacity-70' : ''}`}>
+      <div className="flex items-center gap-3 py-3">
+        <div className="w-14 shrink-0 text-center">
+          <div className="font-cond text-mute2 text-[10px] leading-tight">{formatDate(match.matchDate)}</div>
+        </div>
+
+        <button
+          onClick={() => pickWinner(home)}
+          disabled={!canPick}
+          className={`shrink-0 sm:flex-1 flex items-center justify-end gap-2 rounded-lg px-2 py-1 transition
+            ${winner === home ? 'bg-grass-dim/30 ring-1 ring-grass/40' : canPick ? 'hover:bg-surface2/60' : ''}
+            ${!hasHome ? 'opacity-40 cursor-default' : ''}`}>
+          <span className={`font-cond font-semibold text-sm truncate text-right hidden sm:block ${winner === home ? 'text-grass-400' : 'text-cream'}`}>
+            {home || 'A definir'}
+          </span>
+          {hasHome
+            ? <TeamBadge name={home} showName={false} dim={!!winner && winner !== home} />
+            : <span className="w-7 h-7 rounded-md bg-surface2 border border-dashed border-edge/50 inline-block" />}
+        </button>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <input ref={homeRef} type="number" min="0" max="20" disabled={isLocked}
+            value={score?.h ?? ''}
+            onChange={e => onScore('h', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0))))}
+            onBlur={handleBlur}
+            placeholder={isLocked ? '–' : '0'}
+            className={inputCls} />
+          <span className="text-mute2 font-cond text-sm">×</span>
+          <input ref={awayRef} type="number" min="0" max="20" disabled={isLocked}
+            value={score?.a ?? ''}
+            onChange={e => onScore('a', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0))))}
+            onBlur={handleBlur}
+            placeholder={isLocked ? '–' : '0'}
+            className={inputCls} />
+        </div>
+
+        <button
+          onClick={() => pickWinner(away)}
+          disabled={!canPick}
+          className={`shrink-0 sm:flex-1 flex items-center gap-2 rounded-lg px-2 py-1 transition
+            ${winner === away ? 'bg-grass-dim/30 ring-1 ring-grass/40' : canPick ? 'hover:bg-surface2/60' : ''}
+            ${!hasAway ? 'opacity-40 cursor-default' : ''}`}>
+          {hasAway
+            ? <TeamBadge name={away} showName={false} dim={!!winner && winner !== away} />
+            : <span className="w-7 h-7 rounded-md bg-surface2 border border-dashed border-edge/50 inline-block" />}
+          <span className={`font-cond font-semibold text-sm truncate hidden sm:block ${winner === away ? 'text-grass-400' : 'text-cream'}`}>
+            {away || 'A definir'}
+          </span>
+        </button>
+
+        <div className="w-6 shrink-0 flex justify-center">
+          {winner && <Icon name="check" size={14} className="text-grass-400" />}
+        </div>
       </div>
 
-      <button
-        onClick={() => pickWinner(home)}
-        disabled={!canPick}
-        className={`shrink-0 sm:flex-1 flex items-center justify-end gap-2 rounded-lg px-2 py-1 transition
-          ${winner === home ? 'bg-grass-dim/30 ring-1 ring-grass/40' : canPick ? 'hover:bg-surface2/60' : ''}
-          ${!hasHome ? 'opacity-40 cursor-default' : ''}`}>
-        <span className={`font-cond font-semibold text-sm truncate text-right hidden sm:block ${winner === home ? 'text-grass-400' : 'text-cream'}`}>
-          {home || 'A definir'}
-        </span>
-        {hasHome
-          ? <TeamBadge name={home} showName={false} dim={!!winner && winner !== home} />
-          : <span className="w-7 h-7 rounded-md bg-surface2 border border-dashed border-edge/50 inline-block" />}
-      </button>
-
-      <div className="flex items-center gap-1 shrink-0">
-        <input ref={homeRef} type="number" min="0" max="20" disabled={isLocked}
-          value={score?.h ?? ''}
-          onChange={e => onScore('h', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0))))}
-          onBlur={handleBlur}
-          placeholder={isLocked ? '–' : '0'}
-          className={inputCls} />
-        <span className="text-mute2 font-cond text-sm">×</span>
-        <input ref={awayRef} type="number" min="0" max="20" disabled={isLocked}
-          value={score?.a ?? ''}
-          onChange={e => onScore('a', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0))))}
-          onBlur={handleBlur}
-          placeholder={isLocked ? '–' : '0'}
-          className={inputCls} />
-      </div>
-
-      <button
-        onClick={() => pickWinner(away)}
-        disabled={!canPick}
-        className={`shrink-0 sm:flex-1 flex items-center gap-2 rounded-lg px-2 py-1 transition
-          ${winner === away ? 'bg-grass-dim/30 ring-1 ring-grass/40' : canPick ? 'hover:bg-surface2/60' : ''}
-          ${!hasAway ? 'opacity-40 cursor-default' : ''}`}>
-        {hasAway
-          ? <TeamBadge name={away} showName={false} dim={!!winner && winner !== away} />
-          : <span className="w-7 h-7 rounded-md bg-surface2 border border-dashed border-edge/50 inline-block" />}
-        <span className={`font-cond font-semibold text-sm truncate hidden sm:block ${winner === away ? 'text-grass-400' : 'text-cream'}`}>
-          {away || 'A definir'}
-        </span>
-      </button>
-
-      <div className="w-6 shrink-0 flex justify-center">
-        {winner && <Icon name="check" size={14} className="text-grass-400" />}
-      </div>
+      {needsResolution && canPick && (
+        <div className="flex items-center gap-2 pb-3 pl-16 flex-wrap">
+          {['ExtraTime', 'Penalties'].map(res => (
+            <button
+              key={res}
+              onClick={() => pickResolution(res)}
+              className={`px-3 py-1 rounded-lg font-cond text-xs font-semibold transition border
+                ${resolution === res
+                  ? 'bg-gold-dim/40 border-gold/50 text-gold-400'
+                  : 'border-edge text-mute hover:text-cream hover:bg-surface2/60'}`}>
+              {res === 'ExtraTime' ? 'Prorrogação' : 'Pênaltis'}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-export function MataMata({ matchIdMap = {}, knockoutMatches = [], winners = {}, setWinners, koScores = {}, setKoScores = () => {}, tournamentPhase = 'GroupStage', locked = false }) {
+export function MataMata({ matchIdMap = {}, knockoutMatches = [], winners = {}, setWinners, koScores = {}, setKoScores = () => {}, koResolutions = {}, setKoResolutions = () => {}, tournamentPhase = 'GroupStage', locked = false }) {
   const [phase, setPhase] = useState('r32');
 
   if (tournamentPhase === 'GroupStage' || tournamentPhase === 'PreTournament') {
@@ -170,6 +211,12 @@ export function MataMata({ matchIdMap = {}, knockoutMatches = [], winners = {}, 
     const key = externalIdToKey(externalId);
     if (!key) return;
     setWinners(prev => ({ ...prev, [key]: team }));
+  };
+
+  const handleResolution = (externalId, res) => {
+    const key = externalIdToKey(externalId);
+    if (!key) return;
+    setKoResolutions(prev => ({ ...prev, [key]: res }));
   };
 
   const champion = winners['4-0'];
@@ -230,6 +277,8 @@ export function MataMata({ matchIdMap = {}, knockoutMatches = [], winners = {}, 
                 winner={key ? winners[key] : undefined}
                 onScore={(side, val) => handleScore(match.externalId, side, val)}
                 onWinner={(team) => handleWinner(match.externalId, team)}
+                resolution={key ? koResolutions[key] : undefined}
+                onResolution={(res) => handleResolution(match.externalId, res)}
                 locked={locked}
               />
             );

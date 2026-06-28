@@ -50,7 +50,7 @@ export function Regras() {
             <RuleRow key={i} label={r.label} pts={r.pts} tone="green" last={i === SCORING.knockout.length - 1} />
           ))}
           <p className="text-xs text-mute2 mt-3 leading-relaxed">
-            A cada rodada eliminatória, acertar o vencedor do confronto vale 15 pts. Cravar o placar exato vale 20 pts.
+            Acertar o vencedor vale 15 pts. Bônus de 5 pts por placar exato nos 90 min e mais 5 pts por acertar se a decisão foi em prorrogação ou pênaltis. Máximo de 25 pts por jogo.
           </p>
         </Card>
 
