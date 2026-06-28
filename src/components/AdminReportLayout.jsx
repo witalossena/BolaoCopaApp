@@ -186,6 +186,11 @@ export function AdminReportLayout({ usersData }) {
                         <span style={{ fontWeight: 700 }}>
                           {k.winnerTeam}
                           {k.homeScore != null && ` (${k.homeScore}×${k.awayScore})`}
+                          {k.resolution && k.resolution !== 'Normal' && (
+                            <span style={{ fontWeight: 400, color: '#92400e', marginLeft: 4, fontSize: 9 }}>
+                              {k.resolution === 'ExtraTime' ? 'Prorrogação' : 'Pênaltis'}
+                            </span>
+                          )}
                         </span>
                       </div>
                     ))}

@@ -349,7 +349,7 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {}, 
                              p.externalId?.includes('sf') ? 'Semifinal' : 'Final'}
                           </div>
                           <div className="font-cond font-bold text-xs text-cream truncate">
-                            {p.winnerTeam} <span className="text-mute2 font-normal ml-1">({p.homeScore}×{p.awayScore})</span>
+                            {p.winnerTeam} <span className="text-mute2 font-normal ml-1">({p.homeScore}×{p.awayScore}{p.resolution && p.resolution !== 'Normal' ? ` · ${p.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}` : ''})</span>
                           </div>
                         </div>
                       </div>
