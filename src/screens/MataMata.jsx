@@ -37,6 +37,7 @@ function formatDate(dateStr) {
 function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution, onResolution, locked }) {
   const homeRef = useRef();
   const awayRef = useRef();
+  const [dirty, setDirty] = useState(false);
   const isLocked = match.status === 'locked' || match.status === 'live';
   const home = match.homeTeam;
   const away = match.awayTeam;
@@ -57,7 +58,7 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
       .catch(err => console.error('[MataMata] submit failed:', err));
   };
 
-  const handleBlur = () => {
+  const handleSave = () => {
     if (!canPick) return;
     const h = homeRef.current?.value;
     const a = awayRef.current?.value;
@@ -72,16 +73,19 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
     let res = resolution ?? 'Normal';
     if (hv > av) { resolvedWinner = home; res = 'Normal'; }
     else if (av > hv) { resolvedWinner = away; res = 'Normal'; }
-    // tied: keep current resolution + winner, wait for user to pick
+    // tied: need resolution before saving
+    if (hv === av && !resolution) return;
     if (!resolvedWinner) return;
     if (resolvedWinner !== winner) onWinner(resolvedWinner);
     if (res !== resolution) onResolution(res);
     submit(resolvedWinner, hFinal, aFinal, res);
+    setDirty(false);
   };
 
   const pickWinner = (team) => {
     if (!canPick) return;
     onWinner(team);
+    setDirty(false);
     submit(team, score?.h, score?.a, resolution ?? (needsResolution ? 'Penalties' : 'Normal'));
   };
 
@@ -124,15 +128,13 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
         <div className="flex items-center gap-1 shrink-0">
           <input ref={homeRef} type="number" min="0" max="20" disabled={isLocked}
             value={score?.h ?? ''}
-            onChange={e => onScore('h', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0))))}
-            onBlur={handleBlur}
+            onChange={e => { onScore('h', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))); setDirty(true); }}
             placeholder={isLocked ? '–' : '0'}
             className={inputCls} />
           <span className="text-mute2 font-cond text-sm">×</span>
           <input ref={awayRef} type="number" min="0" max="20" disabled={isLocked}
             value={score?.a ?? ''}
-            onChange={e => onScore('a', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0))))}
-            onBlur={handleBlur}
+            onChange={e => { onScore('a', e.target.value === '' ? '' : String(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))); setDirty(true); }}
             placeholder={isLocked ? '–' : '0'}
             className={inputCls} />
         </div>
@@ -156,9 +158,9 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
         </div>
       </div>
 
-      {needsResolution && canPick && (
+      {(needsResolution || dirty) && canPick && (
         <div className="flex items-center gap-2 pb-3 pl-16 flex-wrap">
-          {['ExtraTime', 'Penalties'].map(res => (
+          {needsResolution && ['ExtraTime', 'Penalties'].map(res => (
             <button
               key={res}
               onClick={() => pickResolution(res)}
@@ -169,6 +171,13 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
               {res === 'ExtraTime' ? 'Prorrogação' : 'Pênaltis'}
             </button>
           ))}
+          {dirty && !(needsResolution && !resolution) && (
+            <button
+              onClick={handleSave}
+              className="px-3 py-1 rounded-lg bg-grass text-bg font-cond text-xs font-bold transition hover:bg-grass/80 active:scale-95">
+              Salvar placar
+            </button>
+          )}
         </div>
       )}
     </div>
