@@ -209,7 +209,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
   const [savingMatch, setSavingMatch] = useState(null);
   const [resettingMatch, setResettingMatch] = useState(null);
   const [lockingMatch, setLockingMatch] = useState(null);
-  const [resultTab, setResultTab] = useState("matamata"); // "matamata" | "grupos" | "classificacao"
+  const [resultTab, setResultTab] = useState("grupos"); // "grupos" | "classificacao" | "matamata"
   const [groupResults, setGroupResults] = useState({});
   const [savingGroupResult, setSavingGroupResult] = useState(null);
   const [resettingGroup, setResettingGroup] = useState(null);
@@ -605,7 +605,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
         </div>
 
         <div className="px-5 py-3 border-b border-edge flex gap-2 flex-wrap">
-          {[["matamata", "Mata-Mata"], ["grupos", "Fase de Grupos"], ["classificacao", "Classificação"]].map(([tab, label]) => (
+          {[["grupos", "Fase de Grupos"], ["classificacao", "Classificação"], ["matamata", "Mata-Mata"]].map(([tab, label]) => (
             <button key={tab} onClick={() => setResultTab(tab)}
               className={`px-4 h-8 rounded-xl font-cond font-bold text-sm border transition-all
                 ${resultTab === tab
