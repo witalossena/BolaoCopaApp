@@ -964,7 +964,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
               </button>
             </div>
           </div>
-          <AdminReportLayout usersData={reportData} />
+          <AdminReportLayout usersData={reportData} knockoutMatches={knockoutMatches} />
         </div>
       )}
 

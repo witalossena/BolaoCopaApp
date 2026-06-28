@@ -25,7 +25,19 @@ function StatBox({ label, done, total }) {
   );
 }
 
-export function AdminReportLayout({ usersData }) {
+const KO_PHASE_LABEL = { r32: '16avos', r16: 'Oitavas', qf: 'Quartas', sf: 'Semifinal', final: 'Final' };
+
+function koPhase(externalId) {
+  if (!externalId) return '?';
+  if (externalId.includes('r32')) return '16avos';
+  if (externalId.includes('r16')) return 'Oitavas';
+  if (externalId.includes('qf')) return 'Quartas';
+  if (externalId.includes('sf')) return 'Semifinal';
+  if (externalId.includes('final')) return 'Final';
+  return externalId;
+}
+
+export function AdminReportLayout({ usersData, knockoutMatches = [] }) {
   const now = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
@@ -36,11 +48,14 @@ export function AdminReportLayout({ usersData }) {
         const knockoutPreds = predictions?.knockoutPredictions || [];
         const specials = predictions?.specials || {};
 
+        const koExternalIds = new Set(knockoutPreds.map(p => p.externalId));
+        const availableKo = knockoutMatches.filter(m => m.homeTeam && m.homeTeam !== 'A definir' && m.awayTeam && m.awayTeam !== 'A definir');
         const missingMatches = GROUP_MATCHES.filter(m => !matchIds.has(m.id));
         const missingGroups = GROUPS.filter(g => !groupIds.has(g.id));
+        const missingKo = availableKo.filter(m => !koExternalIds.has(m.externalId));
         const presentSpecials = SPECIAL_FIELDS.filter(f => specials[BACKEND_KEYS[f.key]]);
         const missingSpecials = SPECIAL_FIELDS.filter(f => !specials[BACKEND_KEYS[f.key]]);
-        const missingCount = missingMatches.length + missingGroups.length + missingSpecials.length;
+        const missingCount = missingMatches.length + missingGroups.length + missingSpecials.length + missingKo.length;
 
         return (
           <div
@@ -75,9 +90,10 @@ export function AdminReportLayout({ usersData }) {
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
               <StatBox label="Partidas apostadas" done={matchIds.size} total={GROUP_MATCHES.length} />
               <StatBox label="Grupos classificados" done={groupIds.size} total={GROUPS.length} />
+              {availableKo.length > 0 && <StatBox label="Mata-Mata" done={koExternalIds.size} total={availableKo.length} />}
               <StatBox label="Especiais" done={presentSpecials.length} total={SPECIAL_FIELDS.length} />
             </div>
 
@@ -87,7 +103,7 @@ export function AdminReportLayout({ usersData }) {
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#c2410c', marginBottom: 10 }}>
                   ⚠ Apostas Faltando ({missingCount})
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: missingMatches.length > 0 ? '2fr 1fr 1fr' : 'repeat(2, 1fr)', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: [missingMatches.length > 0 ? '2fr' : null, missingGroups.length > 0 ? '1fr' : null, missingKo.length > 0 ? '1fr' : null, missingSpecials.length > 0 ? '1fr' : null].filter(Boolean).join(' '), gap: 16 }}>
                   {missingMatches.length > 0 && (
                     <div>
                       <div style={{ fontSize: 9, fontWeight: 700, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
@@ -113,6 +129,18 @@ export function AdminReportLayout({ usersData }) {
                       {missingGroups.map(g => (
                         <div key={g.id} style={{ fontSize: 10, color: '#7c2d12', marginBottom: 2 }}>
                           Grupo {g.id}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {missingKo.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+                        Mata-Mata ({missingKo.length})
+                      </div>
+                      {missingKo.map(m => (
+                        <div key={m.externalId} style={{ fontSize: 10, color: '#7c2d12', marginBottom: 2 }}>
+                          <span style={{ fontWeight: 700 }}>{koPhase(m.externalId)}</span>: {m.homeTeam} × {m.awayTeam}
                         </div>
                       ))}
                     </div>
