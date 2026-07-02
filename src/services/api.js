@@ -22,6 +22,12 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       localStorage.removeItem('bolao2026_v1');
       window.dispatchEvent(new Event('auth:logout'));
+    } else if (!error.response && localStorage.getItem('token')) {
+      // Network error (API offline) — force logout so user doesn't stay on a broken session
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('bolao2026_v1');
+      window.dispatchEvent(new Event('auth:logout'));
     }
     return Promise.reject(error);
   }
