@@ -104,30 +104,55 @@ function UserPredictionsModal({ user, matches, onClose }) {
 
               return (
                 <div className="pt-0">
-                  {predictions.knockoutPredictions?.length > 0 && (
-                    <div className="mb-6">
-                      <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Mata-Mata</div>
-                      <div className="space-y-1.5">
-                        {predictions.knockoutPredictions.map(k => {
-                          const m = matchMap[k.externalId];
-                          return (
-                            <div key={k.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
-                              <span className="font-cond text-sm text-mute2 truncate">{m ? `${m.homeTeam} vs ${m.awayTeam}` : k.externalId}</span>
-                              <div className="flex items-center gap-2 ml-3 shrink-0">
-                                <span className="font-cond font-bold text-grass-400 text-sm">
-                                  {k.winnerTeam}
-                                  {k.homeScore != null && <span className="font-normal text-mute2 ml-1 text-xs">({k.homeScore}×{k.awayScore}{k.resolution && k.resolution !== 'Normal' ? ` · ${k.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}` : ''})</span>}
-                                </span>
-                                <span className={`font-cond text-xs font-semibold px-2 py-0.5 rounded-full ${(k.points ?? 0) > 0 ? 'bg-grass-400/20 text-grass-400' : 'bg-surface text-mute2'}`}>
-                                  {k.points ?? 0}pt
-                                </span>
+                  {predictions.knockoutPredictions?.length > 0 && (() => {
+                    const koPhase = (externalId) => {
+                      if (!externalId) return '?';
+                      if (externalId.includes('r32')) return '16avos';
+                      if (externalId.includes('r16')) return 'Oitavas';
+                      if (externalId.includes('qf')) return 'Quartas';
+                      if (externalId.includes('sf')) return 'Semifinal';
+                      if (externalId.includes('final')) return 'Final';
+                      return '?';
+                    };
+                    const KO_PHASE_ORDER = ['16avos', 'Oitavas', 'Quartas', 'Semifinal', 'Final'];
+                    const byPhase = {};
+                    predictions.knockoutPredictions.forEach(k => {
+                      const phase = koPhase(k.externalId);
+                      if (!byPhase[phase]) byPhase[phase] = [];
+                      byPhase[phase].push(k);
+                    });
+                    return (
+                      <div className="mb-6">
+                        <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Mata-Mata</div>
+                        <div className="space-y-4">
+                          {KO_PHASE_ORDER.filter(p => byPhase[p]).map(phase => (
+                            <div key={phase}>
+                              <div className="font-cond text-[10px] text-mute2 uppercase tracking-widest mb-1.5 px-1">{phase}</div>
+                              <div className="space-y-1.5">
+                                {byPhase[phase].map(k => {
+                                  const m = matchMap[k.externalId];
+                                  return (
+                                    <div key={k.externalId} className="flex items-center justify-between bg-surface2 rounded-xl px-4 py-2.5">
+                                      <span className="font-cond text-sm text-mute2 truncate">{m ? `${m.homeTeam} vs ${m.awayTeam}` : k.externalId}</span>
+                                      <div className="flex items-center gap-2 ml-3 shrink-0">
+                                        <span className="font-cond font-bold text-grass-400 text-sm">
+                                          {k.winnerTeam}
+                                          {k.homeScore != null && <span className="font-normal text-mute2 ml-1 text-xs">({k.homeScore}×{k.awayScore}{k.resolution && k.resolution !== 'Normal' ? ` · ${k.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}` : ''})</span>}
+                                        </span>
+                                        <span className={`font-cond text-xs font-semibold px-2 py-0.5 rounded-full ${(k.points ?? 0) > 0 ? 'bg-grass-400/20 text-grass-400' : 'bg-surface text-mute2'}`}>
+                                          {k.points ?? 0}pt
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   <div className="font-cond font-semibold text-grass-400 text-xs tracking-widest uppercase mb-3">Apostas de Partidas</div>
                   <div className="space-y-4">
                     {todayItems.length > 0 && (
