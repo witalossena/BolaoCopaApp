@@ -223,6 +223,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
   const [resettingGroup, setResettingGroup] = useState(null);
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
+  const [localResolutions, setLocalResolutions] = useState({});
   const [viewingUser, setViewingUser] = useState(null);
   const [paymentUser, setPaymentUser] = useState(null);
   const [togglingUnlock, setTogglingUnlock] = useState(null);
@@ -400,12 +401,13 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
   const saveResult = async (matchId) => {
     const s = localScores[matchId];
     if (!s || s.h === "" || s.a === "") return;
+    const resolution = localResolutions[matchId] ?? null;
     setSavingMatch(matchId);
     try {
-      await adminService.updateMatchResult(matchId, parseInt(s.h, 10), parseInt(s.a, 10));
+      await adminService.updateMatchResult(matchId, parseInt(s.h, 10), parseInt(s.a, 10), resolution);
       setMatches(prev => prev.map(m =>
         m.id === matchId
-          ? { ...m, status: "Locked", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10) }
+          ? { ...m, status: "Locked", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10), resolution }
           : m
       ));
       showToast("Resultado salvo.");
@@ -818,6 +820,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
                           <Icon name="x" size={13} />
                         </button>
                       );
+                      const currentResolution = localResolutions[m.id] ?? (m.resolution && m.resolution !== 'Normal' ? m.resolution : null);
                       return (
                         <div key={m.id} className="px-3 sm:px-5 py-3 space-y-2">
                           <div className="flex items-center gap-2 sm:gap-3">
@@ -841,6 +844,24 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
                             </div>
                             {lockBtn}{liveBtn}{saveBtn}{resetBtn}
                           </div>
+                          {!isLocked && (
+                            <div className="flex items-center gap-2 pl-9">
+                              <span className="font-cond text-mute2 text-xs shrink-0">Resolução:</span>
+                              {[
+                                { val: null, label: 'Normal' },
+                                { val: 'ExtraTime', label: 'Prorrogação' },
+                                { val: 'Penalties', label: 'Pênaltis' },
+                              ].map(({ val, label }) => (
+                                <button key={label} onClick={() => setLocalResolutions(prev => ({ ...prev, [m.id]: val }))}
+                                  className={`px-2.5 py-0.5 rounded-lg font-cond text-xs font-semibold border transition
+                                    ${currentResolution === val
+                                      ? 'bg-gold-dim/40 border-gold/50 text-gold-400'
+                                      : 'border-edge text-mute hover:text-cream hover:bg-surface2/60'}`}>
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           {isUndefined && (
                             <div className="flex items-center gap-2 pl-9">
                               <input value={t.h} onChange={e => setTeam(m.id, "h", e.target.value)}
