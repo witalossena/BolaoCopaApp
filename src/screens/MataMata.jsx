@@ -38,7 +38,8 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
   const homeRef = useRef();
   const awayRef = useRef();
   const [dirty, setDirty] = useState(false);
-  const isLocked = match.status === 'locked' || match.status === 'live';
+  const [forceLocked, setForceLocked] = useState(false);
+  const isLocked = forceLocked || match.status === 'locked' || match.status === 'live';
   const home = match.homeTeam;
   const away = match.awayTeam;
   const hasHome = home && home !== 'A definir';
@@ -55,7 +56,11 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
     const hv = h !== '' && h != null ? parseInt(h, 10) : null;
     const av = a !== '' && a != null ? parseInt(a, 10) : null;
     predictionService.submitKnockoutPrediction(match.id, w, hv, av, res ?? null)
-      .catch(err => console.error('[MataMata] submit failed:', err));
+      .catch(err => {
+        const msg = err?.response?.data || err?.message || '';
+        if (typeof msg === 'string' && msg.toLowerCase().includes('lock')) setForceLocked(true);
+        console.error('[MataMata] submit failed:', err);
+      });
   };
 
   const handleSave = () => {
