@@ -208,20 +208,27 @@ export function AdminReportLayout({ usersData, knockoutMatches = [] }) {
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#15803d', marginBottom: 8 }}>
                       Mata-Mata ({knockoutPreds.length})
                     </div>
-                    {knockoutPreds.map(k => (
-                      <div key={k.externalId} style={{ fontSize: 10, padding: '4px 8px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#9ca3af', fontSize: 9, textTransform: 'uppercase' }}>{k.externalId}</span>
-                        <span style={{ fontWeight: 700 }}>
-                          {k.winnerTeam}
-                          {k.homeScore != null && ` (${k.homeScore}×${k.awayScore})`}
-                          {k.resolution && k.resolution !== 'Normal' && (
-                            <span style={{ fontWeight: 400, color: '#92400e', marginLeft: 4, fontSize: 9 }}>
-                              {k.resolution === 'ExtraTime' ? 'Prorrogação' : 'Pênaltis'}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    ))}
+                    {knockoutPreds.map(k => {
+                      const km = knockoutMatches.find(m => m.externalId === k.externalId);
+                      const matchup = km ? `${km.homeTeam} vs ${km.awayTeam}` : null;
+                      return (
+                        <div key={k.externalId} style={{ fontSize: 10, padding: '4px 8px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                          <div>
+                            <span style={{ color: '#15803d', fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>{koPhase(k.externalId)}</span>
+                            {matchup && <div style={{ color: '#6b7280', fontSize: 9 }}>{matchup}</div>}
+                          </div>
+                          <span style={{ fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            {k.winnerTeam}
+                            {k.homeScore != null && ` (${k.homeScore}×${k.awayScore})`}
+                            {k.resolution && k.resolution !== 'Normal' && (
+                              <span style={{ fontWeight: 400, color: '#92400e', marginLeft: 4, fontSize: 9 }}>
+                                {k.resolution === 'ExtraTime' ? 'Prorr.' : 'Pên.'}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

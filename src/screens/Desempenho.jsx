@@ -344,8 +344,9 @@ export function Desempenho({ user, ranking, setView, onClearAll, specials = {}, 
                         <span className="text-grass-400 shrink-0"><Icon name="bracket" size={14} /></span>
                         <div className="flex-1 min-w-0">
                           <div className="font-cond text-[10px] text-mute2 uppercase tracking-wider leading-none mb-1">
-                            {p.externalId?.includes('r32') ? 'Oitavas' : 
-                             p.externalId?.includes('r16') ? 'Quartas' : 
+                            {p.externalId?.includes('r32') ? '16avos' :
+                             p.externalId?.includes('r16') ? 'Oitavas' :
+                             p.externalId?.includes('qf') ? 'Quartas' :
                              p.externalId?.includes('sf') ? 'Semifinal' : 'Final'}
                           </div>
                           <div className="font-cond font-bold text-xs text-cream truncate">
