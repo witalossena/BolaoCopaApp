@@ -39,7 +39,8 @@ function KnockoutMatchRow({ match, score, winner, onScore, onWinner, resolution,
   const awayRef = useRef();
   const [dirty, setDirty] = useState(false);
   const [forceLocked, setForceLocked] = useState(false);
-  const isLocked = forceLocked || match.status === 'locked' || match.status === 'live';
+  const statusLower = match.status?.toLowerCase();
+  const isLocked = forceLocked || statusLower === 'locked' || statusLower === 'live';
   const home = match.homeTeam;
   const away = match.awayTeam;
   const hasHome = home && home !== 'A definir';
