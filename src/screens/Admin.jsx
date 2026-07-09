@@ -249,6 +249,7 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
   const [localTeams, setLocalTeams] = useState({});
   const [savingTeams, setSavingTeams] = useState(null);
   const [localResolutions, setLocalResolutions] = useState({});
+  const [localWinners, setLocalWinners] = useState({});
   const [viewingUser, setViewingUser] = useState(null);
   const [paymentUser, setPaymentUser] = useState(null);
   const [togglingUnlock, setTogglingUnlock] = useState(null);
@@ -427,12 +428,16 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
     const s = localScores[matchId];
     if (!s || s.h === "" || s.a === "") return;
     const resolution = localResolutions[matchId] ?? null;
+    const hv = parseInt(s.h, 10);
+    const av = parseInt(s.a, 10);
+    const winnerTeam = hv !== av ? null : (localWinners[matchId] ?? null);
+    if (hv === av && !winnerTeam) { showToast("Selecione o time vencedor (placar empatado)."); return; }
     setSavingMatch(matchId);
     try {
-      await adminService.updateMatchResult(matchId, parseInt(s.h, 10), parseInt(s.a, 10), resolution);
+      await adminService.updateMatchResult(matchId, hv, av, resolution, winnerTeam);
       setMatches(prev => prev.map(m =>
         m.id === matchId
-          ? { ...m, status: "Locked", realHome: parseInt(s.h, 10), realAway: parseInt(s.a, 10), resolution }
+          ? { ...m, status: "Locked", realHome: hv, realAway: av, resolution }
           : m
       ));
       showToast("Resultado salvo.");
@@ -809,7 +814,10 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
                       const t = { h: localTeams[m.id]?.h ?? m.homeTeam ?? "", a: localTeams[m.id]?.a ?? m.awayTeam ?? "" };
                       const hasResult = m.realHome != null && m.realAway != null;
                       const isLocked = m.status === "Locked";
-                      const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id && !isLocked;
+                      const _sh = s.h !== "" && s.a !== "" ? parseInt(s.h, 10) : null;
+                      const _sa = s.h !== "" && s.a !== "" ? parseInt(s.a, 10) : null;
+                      const _tied = _sh != null && _sh === _sa;
+                      const canSave = s.h !== "" && s.a !== "" && savingMatch !== m.id && !isLocked && (!_tied || !!localWinners[m.id]);
                       const canSaveTeams = t.h && t.a && savingTeams !== m.id;
                       const isUndefined = !m.homeTeam || m.homeTeam === "A definir" || !m.awayTeam || m.awayTeam === "A definir";
                       const lockBtn = (
@@ -846,6 +854,10 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
                         </button>
                       );
                       const currentResolution = localResolutions[m.id] ?? (m.resolution && m.resolution !== 'Normal' ? m.resolution : null);
+                      const sh = localScores[m.id]?.h ?? "";
+                      const sa = localScores[m.id]?.a ?? "";
+                      const isTied = sh !== "" && sa !== "" && parseInt(sh, 10) === parseInt(sa, 10);
+                      const currentWinner = localWinners[m.id] ?? null;
                       return (
                         <div key={m.id} className="px-3 sm:px-5 py-3 space-y-2">
                           <div className="flex items-center gap-2 sm:gap-3">
@@ -885,6 +897,22 @@ export function Admin({ allUsers, ranking = [], togglePaid, togglePredictionUnlo
                                   {label}
                                 </button>
                               ))}
+                            </div>
+                          )}
+                          {!isLocked && isTied && (
+                            <div className="flex items-center gap-2 pl-9">
+                              <span className="font-cond text-mute2 text-xs shrink-0">Quem passou:</span>
+                              {[m.homeTeam, m.awayTeam].filter(Boolean).map(team => (
+                                <button key={team}
+                                  onClick={() => setLocalWinners(prev => ({ ...prev, [m.id]: team }))}
+                                  className={`px-2.5 py-0.5 rounded-lg font-cond text-xs font-semibold border transition
+                                    ${currentWinner === team
+                                      ? 'bg-grass-dim/40 border-grass/50 text-grass-400'
+                                      : 'border-edge text-mute hover:text-cream hover:bg-surface2/60'}`}>
+                                  {team}
+                                </button>
+                              ))}
+                              {!currentWinner && <span className="font-cond text-xs text-danger/80 italic">obrigatório</span>}
                             </div>
                           )}
                           {isUndefined && (

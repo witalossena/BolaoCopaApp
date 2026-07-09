@@ -140,8 +140,8 @@ export const adminService = {
     });
     return response.data;
   },
-  updateMatchResult: async (matchId, homeScore, awayScore, resolution = null) => {
-    const response = await api.post('/admin/match-result', { matchId, homeScore, awayScore, resolution });
+  updateMatchResult: async (matchId, homeScore, awayScore, resolution = null, winnerTeam = null) => {
+    const response = await api.post('/admin/match-result', { matchId, homeScore, awayScore, resolution, winnerTeam });
     return response.data;
   },
   updateLiveScore: async (matchId, homeScore, awayScore) => {
