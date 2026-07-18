@@ -23,7 +23,8 @@ function externalIdToWinnerKey(externalId) {
   if (qf) return `2-${qf[1]}`;
   const sf = externalId.match(/^ko_sf_(\d+)$/);
   if (sf) return `3-${sf[1]}`;
-  if (externalId === 'ko_final') return '4-0';
+  if (externalId === 'ko_3rd') return '4-1';
+  if (externalId === 'ko_final') return '5-0';
   return null;
 }
 

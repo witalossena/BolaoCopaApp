@@ -10,6 +10,7 @@ const PHASES = [
   { key: 'r16',   label: 'Oitavas',  prefix: 'ko_r16_',  total: 8  },
   { key: 'qf',    label: 'Quartas',  prefix: 'ko_qf_',   total: 4  },
   { key: 'sf',    label: 'Semifinal',prefix: 'ko_sf_',   total: 2  },
+  { key: 'third', label: '3° Lugar', prefix: 'ko_3rd',   total: 1  },
   { key: 'final', label: 'Final',    prefix: 'ko_final', total: 1  },
 ];
 
@@ -23,7 +24,8 @@ function externalIdToKey(externalId) {
   if (qf) return `2-${qf[1]}`;
   const sf = externalId.match(/^ko_sf_(\d+)$/);
   if (sf) return `3-${sf[1]}`;
-  if (externalId === 'ko_final') return '4-0';
+  if (externalId === 'ko_3rd') return '4-1';
+  if (externalId === 'ko_final') return '5-0';
   return null;
 }
 
@@ -250,8 +252,6 @@ export function MataMata({ matchIdMap = {}, knockoutMatches = [], winners = {}, 
     setKoResolutions(prev => ({ ...prev, [key]: res }));
   };
 
-  const champion = winners['4-0'];
-
   return (
     <div>
       <PageTitle kicker="Fase eliminatória">Mata-Mata</PageTitle>
@@ -259,16 +259,6 @@ export function MataMata({ matchIdMap = {}, knockoutMatches = [], winners = {}, 
         Clique no time vencedor e preencha o placar.
         Acerto vale <b className="text-grass-400">15 pts</b>. Com placar exato: <b className="text-gold">20 pts</b>.
       </p>
-
-      {champion && (
-        <Card className="mb-6 border-gold/40 bg-gold-dim/30 flex items-center gap-4">
-          <span className="text-gold"><Icon name="crown" size={28} /></span>
-          <div>
-            <div className="font-cond text-mute text-xs tracking-widest uppercase">Seu campeão</div>
-            <div className="font-display text-2xl text-gold-400">{champion}</div>
-          </div>
-        </Card>
-      )}
 
       {/* Phase tabs */}
       <div className="flex gap-1 mb-4 bg-surface2/40 rounded-xl p-1 border border-edge">
